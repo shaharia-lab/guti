@@ -1,0 +1,4 @@
+project_name: teredix
+builds:
+  - env: [CGO_ENABLED=0]
+    binary: ""
