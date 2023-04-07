@@ -1,6 +1,5 @@
 # Set variables
 APP_NAME := gotil
-APP_NAME := gotil
 GOOS := linux
 GOARCH := amd64
 BUILD_DIR := build
