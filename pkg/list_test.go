@@ -97,7 +97,7 @@ func TestIsExistSecondArgNotSlice(t *testing.T) {
 }
 
 func TestIsExist_TypeMismatch(t *testing.T) {
-	var inputSlice []interface{} = []interface{}{1, 2, 3, 4, 5, "6"}
+	var inputSlice = []interface{}{1, 2, 3, 4, 5, "6"}
 
 	// Search for a string in a slice of integers
 	searchItem := "6"

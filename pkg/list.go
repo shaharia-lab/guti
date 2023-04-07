@@ -1,3 +1,4 @@
+// Package pkg contains packages
 package pkg
 
 import (
@@ -7,6 +8,7 @@ import (
 
 const epsilon = 1e-6
 
+// IsExist find item from a slice
 func IsExist(what interface{}, in interface{}) bool {
 	s := reflect.ValueOf(in)
 
