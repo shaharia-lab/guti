@@ -76,8 +76,8 @@ func Any(data []interface{}, predicate func(interface{}) bool) bool {
 }
 
 // Reduce a function that applies a reducing function to a list and returns a
-// single value. The reducing function takes two arguments, an accumulator and a value,
-//and returns a new accumulator.
+// single value. The reducing function takes two arguments, an accumulator and a
+// value, and returns a new accumulator.
 func Reduce(data []interface{}, reduce func(interface{}, interface{}) interface{}, initial interface{}) interface{} {
 	acc := initial
 	for _, d := range data {
