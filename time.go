@@ -1,5 +1,5 @@
-// Package gotil contains packages
-package gotil
+// Package guti contains packages
+package guti
 
 import "time"
 

@@ -1,4 +1,4 @@
-package gotil
+package guti
 
 import (
 	"errors"

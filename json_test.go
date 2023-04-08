@@ -1,4 +1,4 @@
-package gotil
+package guti
 
 import (
 	"github.com/stretchr/testify/assert"
