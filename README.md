@@ -38,7 +38,7 @@ guti.ContainsAll()
 
 ## Documentation
 
-Full documentation is available on [pkg.go.dev/github.com/shahariaazam/gotil](https://pkg.go.dev/github.com/shahariaazam/gotil#section-documentation)
+Full documentation is available on [pkg.go.dev/github.com/shahariaazam/guti](https://pkg.go.dev/github.com/shahariaazam/guti#section-documentation)
 
 ### 📝 License
 
