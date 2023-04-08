@@ -1,3 +1,2 @@
-# Gotil
-A Utility library for Go developers
-
+# gotil
+An Utility library for Go developers
