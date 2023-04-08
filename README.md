@@ -1,2 +1,3 @@
-# gotil
-An Utility library for Go developers
+# Guti
+A Utility library for Go developers
+
