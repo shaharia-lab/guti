@@ -1,4 +1,5 @@
-package gotil
+// Package pkg gotil contains packages
+package pkg
 
 import (
 	"fmt"

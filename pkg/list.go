@@ -1,5 +1,5 @@
-// Package gotil contains packages
-package gotil
+// Package pkg gotil contains packages
+package pkg
 
 import (
 	"encoding/csv"
@@ -174,7 +174,7 @@ func Batch(items interface{}, batchSize int) [][]interface{} {
 	return batches
 }
 
-// ConvertSliceInterfaceToSlice
+// ConvertSliceInterfaceToSlice takes a reflect.Value of a slice of unknown type and returns a new slice of interface{} type
 func ConvertSliceInterfaceToSlice(slice reflect.Value) []interface{} {
 	s := make([]interface{}, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
