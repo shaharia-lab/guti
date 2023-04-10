@@ -1,3 +1,4 @@
+// Package guti contains utility functions
 package guti
 
 import (
