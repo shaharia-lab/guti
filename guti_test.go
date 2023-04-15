@@ -26,3 +26,53 @@ func TestGetTypeName(t *testing.T) {
 		}
 	}
 }
+
+func TestCompareStructs(t *testing.T) {
+	testCases := []struct {
+		name     string
+		s1       interface{}
+		s2       interface{}
+		expected bool
+	}{
+		{
+			"equal maps",
+			map[string]interface{}{"a": 1, "b": "two", "c": true},
+			map[string]interface{}{"a": 1, "b": "two", "c": true},
+			true,
+		},
+		{
+			"Unequal maps",
+			map[string]interface{}{"a": 1, "b": "two", "c": true},
+			map[string]interface{}{"a": 1, "b": "two", "c": false},
+			false,
+		},
+		{
+			"Equal slices",
+			[]interface{}{1, "two", true},
+			[]interface{}{1, "two", true},
+			true,
+		},
+		{
+			"Unequal slices",
+			[]interface{}{1, "two", true},
+			[]interface{}{1, "two", false},
+			false,
+		},
+		{
+			"Different types",
+			map[string]interface{}{"a": 1, "b": "two", "c": true},
+			[]interface{}{1, "two", true},
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := CompareStructs(tc.s1, tc.s2)
+			if result != tc.expected {
+				t.Errorf("CompareStructs(%v, %v) = %v, expected %v",
+					tc.s1, tc.s2, result, tc.expected)
+			}
+		})
+	}
+}
