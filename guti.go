@@ -28,3 +28,53 @@ func GetTypeName(myvar interface{}) string {
 
 	return t.Name()
 }
+
+// CompareStructs is a function that takes two input parameters of type interface{},
+// and returns a bool indicating whether the two structs are equal or not.
+//
+// The function uses reflection to determine the type of each input parameter,
+// and then compares their values recursively, field by field, until either a mismatch
+// is found, or all fields have been compared successfully.
+//
+// If the input parameters are maps, the function compares each key-value pair in
+// the maps recursively. If they are slices, the function compares each element in
+// the slices recursively. If they are any other type, the function compares their
+// values directly.
+//
+// The method is designed to work with any kind of struct, as long as it is represented
+// as a map or a slice of interfaces. It can be used for testing, data validation,
+// or any other use case where you need to compare two structs for equality.
+func CompareStructs(s1 interface{}, s2 interface{}) bool {
+	if reflect.TypeOf(s1) != reflect.TypeOf(s2) {
+		return false
+	}
+
+	switch s1 := s1.(type) {
+	case map[string]interface{}:
+		s2 := s2.(map[string]interface{})
+		if len(s1) != len(s2) {
+			return false
+		}
+		for key := range s1 {
+			if !CompareStructs(s1[key], s2[key]) {
+				return false
+			}
+		}
+		return true
+
+	case []interface{}:
+		s2 := s2.([]interface{})
+		if len(s1) != len(s2) {
+			return false
+		}
+		for i := range s1 {
+			if !CompareStructs(s1[i], s2[i]) {
+				return false
+			}
+		}
+		return true
+
+	default:
+		return s1 == s2
+	}
+}
