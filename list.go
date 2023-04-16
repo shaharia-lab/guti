@@ -10,7 +10,11 @@ import (
 
 const epsilon = 1e-6
 
-// IsExist find item from a slice
+// IsExist searches for an item in a slice and returns true if it is found, and false otherwise.
+// It supports searching for items of various types, including integers, floats, strings, booleans,
+// and objects. It uses reflection to determine the type of the items in the slice, and to compare them
+// to the search item. If the second argument is not a slice, it will panic. If the search item is not
+// of the same type as the items in the slice, it will be skipped.
 func IsExist(what interface{}, in interface{}) bool {
 	s := reflect.ValueOf(in)
 
