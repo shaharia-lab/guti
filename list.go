@@ -133,9 +133,26 @@ func Any(data []interface{}, predicate func(interface{}) bool) bool {
 	return false
 }
 
-// Reduce a function that applies a reducing function to a list and returns a
-// single value. The reducing function takes two arguments, an accumulator and a
-// value, and returns a new accumulator.
+// Reduce applies a reducing function to a list and returns a single value.
+// The reducing function takes two arguments, an accumulator and a value, and returns
+// a new accumulator. The initial value of the accumulator is provided as an argument.
+// The function can reduce lists of any type, including integers, floats, strings,
+// and custom types. If the initial value is not of the same type as the elements of
+// the list, it will panic. The function returns the final value of the accumulator.
+//
+// Example usage:
+//
+//	data := []interface{}{1, 2, 3, 4, 5}
+//
+//	reduceFunc := func(acc interface{}, value interface{}) interface{} {
+//		return acc.(int) + value.(int)
+//	}
+//
+//	initial := 0
+//	result := guti.Reduce(data, reduceFunc, initial)
+//	fmt.Println(result) // should print 15
+//
+// Playground: https://go.dev/play/p/A7ZQrVp_uIk
 func Reduce(data []interface{}, reduce func(interface{}, interface{}) interface{}, initial interface{}) interface{} {
 	acc := initial
 	for _, d := range data {
