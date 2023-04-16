@@ -161,8 +161,24 @@ func Reduce(data []interface{}, reduce func(interface{}, interface{}) interface{
 	return acc
 }
 
-// Map a function that applies a transformation function to each element
-// of a list and returns a new list with the transformed elements.
+// Map applies a transformation function to each element of a slice and returns a new slice with the
+// transformed elements. The transform function takes an element of the input slice as input and returns
+// a transformed value. The input slice can contain elements of any type, but the transform function must
+// be able to handle each element type appropriately. The returned slice has the same length as the input
+// slice, and each element is the result of applying the transform function to the corresponding input element.
+// The input slice is not modified by the function.
+//
+// Example usage:
+//
+//	input := []interface{}{1, 2, 3, 4, 5}
+//
+//	transform := func(d interface{}) interface{} {
+//		return d.(int) * 2
+//	}
+//	output := Map(input, transform)
+//	fmt.Println(output) // [2 4 6 8 10]
+//
+// Playground: https://go.dev/play/p/ZguMfToP0Xh
 func Map(data []interface{}, transform func(interface{}) interface{}) []interface{} {
 	result := []interface{}{}
 	for _, d := range data {
