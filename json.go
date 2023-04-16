@@ -19,6 +19,8 @@ import (
 //	result, err := JSONToMap(data)
 //	fmt.Println(result["name"])  // prints "John Doe"
 //	fmt.Println(result["age"])   // prints 30
+//
+// Playground: https://go.dev/play/p/Tcecnf8wlEb
 func JSONToMap(data []byte) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal(data, &result)
@@ -38,6 +40,8 @@ func JSONToMap(data []byte) (map[string]interface{}, error) {
 //	data := map[string]interface{}{"name": "John", "age": 30}
 //	result, err := JSONToString(data)
 //	fmt.Println(result)   // prints '{"age":30,"name":"John"}'
+//
+// Playground: https://go.dev/play/p/PFc88pqp3CD
 func JSONToString(data interface{}) (string, error) {
 	b, err := json.Marshal(data)
 	return string(b), err
