@@ -81,24 +81,25 @@ func JSONFileToMap(filename string) (map[string]interface{}, error) {
 // working with configuration files or other JSON data that needs to be merged together from multiple sources.
 //
 // Example usage:
-//   dst := map[string]interface{}{
-//     "name": "John Doe",
-//     "age":  30,
-//     "address": map[string]interface{}{
-//       "city":    "New York",
-//       "country": "USA",
-//     },
-//   }
-//   src := map[string]interface{}{
-//     "age": 35,
-//     "address": map[string]interface{}{
-//       "city":  "Boston",
-//       "state": "MA",
-//     },
-//     "phone": "123-456-7890",
-//   }
-//   result := DeepMergeJSON(dst, src)
-//   fmt.Println(result)
+//
+//	dst := map[string]interface{}{
+//	  "name": "John Doe",
+//	  "age":  30,
+//	  "address": map[string]interface{}{
+//	    "city":    "New York",
+//	    "country": "USA",
+//	  },
+//	}
+//	src := map[string]interface{}{
+//	  "age": 35,
+//	  "address": map[string]interface{}{
+//	    "city":  "Boston",
+//	    "state": "MA",
+//	  },
+//	  "phone": "123-456-7890",
+//	}
+//	result := DeepMergeJSON(dst, src)
+//	fmt.Println(result)
 func DeepMergeJSON(dst, src map[string]interface{}) map[string]interface{} {
 	for key, srcVal := range src {
 		if dstVal, ok := dst[key]; ok {
