@@ -15,10 +15,11 @@ import "reflect"
 // type of an object dynamically, such as in debugging, logging, or error handling.
 //
 // Example usage:
-//   var myInt int
-//   var myPtr *MyStruct
-//   fmt.Println(GetTypeName(myInt))   // prints "int"
-//   fmt.Println(GetTypeName(myPtr))   // prints "*MyStruct"
+//
+//	var myInt int
+//	var myPtr *MyStruct
+//	fmt.Println(GetTypeName(myInt))   // prints "int"
+//	fmt.Println(GetTypeName(myPtr))   // prints "*MyStruct"
 func GetTypeName(myvar interface{}) string {
 	t := reflect.TypeOf(myvar)
 
