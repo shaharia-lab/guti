@@ -16,10 +16,15 @@ import "reflect"
 //
 // Example usage:
 //
+//	type MyStruct struct {
+//	}
+//
 //	var myInt int
 //	var myPtr *MyStruct
-//	fmt.Println(GetTypeName(myInt))   // prints "int"
-//	fmt.Println(GetTypeName(myPtr))   // prints "*MyStruct"
+//	fmt.Println(GetTypeName(myInt)) // prints "int"
+//	fmt.Println(GetTypeName(myPtr)) // prints "*MyStruct"
+//
+//	Playground: https://go.dev/play/p/XUAjQoGwilU
 func GetTypeName(myvar interface{}) string {
 	t := reflect.TypeOf(myvar)
 
