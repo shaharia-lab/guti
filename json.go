@@ -60,6 +60,8 @@ func JSONToString(data interface{}) (string, error) {
 //	} else {
 //		fmt.Println(result)
 //	}
+//
+// Playground: https://go.dev/play/p/Tk0pqxI5E8A
 func JSONFileToMap(filename string) (map[string]interface{}, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -100,6 +102,8 @@ func JSONFileToMap(filename string) (map[string]interface{}, error) {
 //	}
 //	result := DeepMergeJSON(dst, src)
 //	fmt.Println(result)
+//
+// Playground: https://go.dev/play/p/zAZieDE3OUf
 func DeepMergeJSON(dst, src map[string]interface{}) map[string]interface{} {
 	for key, srcVal := range src {
 		if dstVal, ok := dst[key]; ok {
