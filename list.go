@@ -188,6 +188,19 @@ func Map(data []interface{}, transform func(interface{}) interface{}) []interfac
 }
 
 // IndexOf returns the index of the first occurrence of a given element in a list. If the element is not found, it returns -1.
+// The data parameter is a slice of interface{} type which can hold any type of data. The element parameter is the element whose index is to be searched in the slice.
+// This function returns an integer value that represents the index of the first occurrence of the given element in the slice.
+//
+// Example usage:
+//
+//	data := []interface{}{"apple", "banana", "cherry"}
+//
+//	element := "banana"
+//
+//	index := guti.IndexOf(data, element)
+//	fmt.Println("Index of", element, "is", index)	// should output: Index of banana is 1
+//
+// Playground: https://go.dev/play/p/K7X-4_RbJPG
 func IndexOf(data []interface{}, element interface{}) int {
 	for i, d := range data {
 		if d == element {
