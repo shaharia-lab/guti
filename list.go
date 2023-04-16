@@ -15,6 +15,37 @@ const epsilon = 1e-6
 // and objects. It uses reflection to determine the type of the items in the slice, and to compare them
 // to the search item. If the second argument is not a slice, it will panic. If the search item is not
 // of the same type as the items in the slice, it will be skipped.
+//
+// Example usage:
+//
+//	intSlice := []int{1, 2, 3, 4, 5}
+//	fmt.Println(guti.IsExist(3, intSlice)) // prints "true"
+//	fmt.Println(guti.IsExist(6, intSlice)) // prints "false"
+//
+//	strSlice := []string{"foo", "bar", "baz"}
+//	fmt.Println(guti.IsExist("qux", strSlice)) // prints "false"
+//	fmt.Println(guti.IsExist("foo", strSlice)) // prints "true"
+//
+//	objectSlice := []struct {
+//		Name string
+//		Age  int
+//	}{
+//		{Name: "Alice", Age: 25},
+//		{Name: "Bob", Age: 25},
+//		{Name: "Charlie", Age: 35},
+//	}
+//	fmt.Println(guti.IsExist(struct {
+//		Name string
+//		Age  int
+//	}{Name: "Bob", Age: 25}, objectSlice)) // prints "true"
+//
+//	boolSlice := []bool{true, false}
+//	fmt.Println(guti.IsExist(true, boolSlice)) // prints "true"
+//
+//	emptySlice := []int{}
+//	fmt.Println(guti.IsExist(1, emptySlice)) // prints "false"
+//
+// Playground: https://go.dev/play/p/jHua3iwd6xT
 func IsExist(what interface{}, in interface{}) bool {
 	s := reflect.ValueOf(in)
 
@@ -58,7 +89,19 @@ func IsExist(what interface{}, in interface{}) bool {
 	return false
 }
 
-// Filter a function that filters a list based on a given predicate function. The function returns a new list with the elements that satisfy the predicate function.
+// Filter returns a new list containing the elements of the input list that
+// satisfy the given predicate function. The predicate function takes an input
+// element of the list and returns true if the element should be included in the
+// output list, and false otherwise. The input list can contain elements of any
+// type, and the predicate function should take an argument of type interface{}.
+//
+// Example usage:
+//
+//	data := []interface{}{1, 2, 3, 4, 5}
+//	isEven := func(x interface{}) bool { return x.(int)%2 == 0 }
+//	result := Filter(data, isEven)  // result = []interface{}{2, 4}
+//
+// Playground: https://go.dev/play/p/haueBKmeb3e
 func Filter(data []interface{}, predicate func(interface{}) bool) []interface{} {
 	result := []interface{}{}
 	for _, d := range data {
@@ -69,7 +112,18 @@ func Filter(data []interface{}, predicate func(interface{}) bool) []interface{} 
 	return result
 }
 
-// Any a function that returns true if at least one element of a list satisfies a given predicate function.
+// Any returns true if at least one element of the input list satisfies the given predicate function,
+// and false otherwise. The predicate function takes an input element of the list and returns true
+// if the element satisfies the predicate, and false otherwise. The input list can contain elements
+// of any type, and the predicate function should take an argument of type interface{}.
+//
+// Example usage:
+//
+//	data := []interface{}{1, 2, 3, 4, 5}
+//	isEven := func(x interface{}) bool { return x.(int)%2 == 0 }
+//	result := Any(data, isEven)  // result = true
+//
+// Playground: https://go.dev/play/p/mVzWG6tTp_2
 func Any(data []interface{}, predicate func(interface{}) bool) bool {
 	for _, d := range data {
 		if predicate(d) {
@@ -79,9 +133,26 @@ func Any(data []interface{}, predicate func(interface{}) bool) bool {
 	return false
 }
 
-// Reduce a function that applies a reducing function to a list and returns a
-// single value. The reducing function takes two arguments, an accumulator and a
-// value, and returns a new accumulator.
+// Reduce applies a reducing function to a list and returns a single value.
+// The reducing function takes two arguments, an accumulator and a value, and returns
+// a new accumulator. The initial value of the accumulator is provided as an argument.
+// The function can reduce lists of any type, including integers, floats, strings,
+// and custom types. If the initial value is not of the same type as the elements of
+// the list, it will panic. The function returns the final value of the accumulator.
+//
+// Example usage:
+//
+//	data := []interface{}{1, 2, 3, 4, 5}
+//
+//	reduceFunc := func(acc interface{}, value interface{}) interface{} {
+//		return acc.(int) + value.(int)
+//	}
+//
+//	initial := 0
+//	result := guti.Reduce(data, reduceFunc, initial)
+//	fmt.Println(result) // should print 15
+//
+// Playground: https://go.dev/play/p/A7ZQrVp_uIk
 func Reduce(data []interface{}, reduce func(interface{}, interface{}) interface{}, initial interface{}) interface{} {
 	acc := initial
 	for _, d := range data {
@@ -90,8 +161,24 @@ func Reduce(data []interface{}, reduce func(interface{}, interface{}) interface{
 	return acc
 }
 
-// Map a function that applies a transformation function to each element
-// of a list and returns a new list with the transformed elements.
+// Map applies a transformation function to each element of a slice and returns a new slice with the
+// transformed elements. The transform function takes an element of the input slice as input and returns
+// a transformed value. The input slice can contain elements of any type, but the transform function must
+// be able to handle each element type appropriately. The returned slice has the same length as the input
+// slice, and each element is the result of applying the transform function to the corresponding input element.
+// The input slice is not modified by the function.
+//
+// Example usage:
+//
+//	input := []interface{}{1, 2, 3, 4, 5}
+//
+//	transform := func(d interface{}) interface{} {
+//		return d.(int) * 2
+//	}
+//	output := Map(input, transform)
+//	fmt.Println(output) // [2 4 6 8 10]
+//
+// Playground: https://go.dev/play/p/ZguMfToP0Xh
 func Map(data []interface{}, transform func(interface{}) interface{}) []interface{} {
 	result := []interface{}{}
 	for _, d := range data {
@@ -101,6 +188,19 @@ func Map(data []interface{}, transform func(interface{}) interface{}) []interfac
 }
 
 // IndexOf returns the index of the first occurrence of a given element in a list. If the element is not found, it returns -1.
+// The data parameter is a slice of interface{} type which can hold any type of data. The element parameter is the element whose index is to be searched in the slice.
+// This function returns an integer value that represents the index of the first occurrence of the given element in the slice.
+//
+// Example usage:
+//
+//	data := []interface{}{"apple", "banana", "cherry"}
+//
+//	element := "banana"
+//
+//	index := guti.IndexOf(data, element)
+//	fmt.Println("Index of", element, "is", index)	// should output: Index of banana is 1
+//
+// Playground: https://go.dev/play/p/K7X-4_RbJPG
 func IndexOf(data []interface{}, element interface{}) int {
 	for i, d := range data {
 		if d == element {
