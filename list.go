@@ -112,7 +112,18 @@ func Filter(data []interface{}, predicate func(interface{}) bool) []interface{} 
 	return result
 }
 
-// Any a function that returns true if at least one element of a list satisfies a given predicate function.
+// Any returns true if at least one element of the input list satisfies the given predicate function,
+// and false otherwise. The predicate function takes an input element of the list and returns true
+// if the element satisfies the predicate, and false otherwise. The input list can contain elements
+// of any type, and the predicate function should take an argument of type interface{}.
+//
+// Example usage:
+//
+//	data := []interface{}{1, 2, 3, 4, 5}
+//	isEven := func(x interface{}) bool { return x.(int)%2 == 0 }
+//	result := Any(data, isEven)  // result = true
+//
+// Playground: https://go.dev/play/p/mVzWG6tTp_2
 func Any(data []interface{}, predicate func(interface{}) bool) bool {
 	for _, d := range data {
 		if predicate(d) {
