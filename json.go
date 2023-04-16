@@ -14,10 +14,11 @@ import (
 // dynamically, such as when you are working with data that is generated or received in JSON format.
 //
 // Example usage:
-//   data := []byte(`{"name": "John Doe", "age": 30}`)
-//   result, err := JSONToMap(data)
-//   fmt.Println(result["name"])  // prints "John Doe"
-//   fmt.Println(result["age"])   // prints 30
+//
+//	data := []byte(`{"name": "John Doe", "age": 30}`)
+//	result, err := JSONToMap(data)
+//	fmt.Println(result["name"])  // prints "John Doe"
+//	fmt.Println(result["age"])   // prints 30
 func JSONToMap(data []byte) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal(data, &result)
@@ -33,9 +34,10 @@ func JSONToMap(data []byte) (map[string]interface{}, error) {
 // as a string.
 //
 // Example usage:
-//   data := map[string]interface{}{"name": "John", "age": 30}
-//   result, err := JSONToString(data)
-//   fmt.Println(result)   // prints '{"age":30,"name":"John"}'
+//
+//	data := map[string]interface{}{"name": "John", "age": 30}
+//	result, err := JSONToString(data)
+//	fmt.Println(result)   // prints '{"age":30,"name":"John"}'
 func JSONToString(data interface{}) (string, error) {
 	b, err := json.Marshal(data)
 	return string(b), err
@@ -51,12 +53,13 @@ func JSONToString(data interface{}) (string, error) {
 // or other JSON data stored on disk.
 //
 // Example usage:
-//   result, err := JSONFileToMap("path/to/file.json")
-//   if err != nil {
-//     fmt.Println("Error reading JSON file:", err)
-//   } else {
-//     fmt.Println(result)
-//   }
+//
+//	result, err := JSONFileToMap("path/to/file.json")
+//	if err != nil {
+//		fmt.Println("Error reading JSON file:", err)
+//	} else {
+//		fmt.Println(result)
+//	}
 func JSONFileToMap(filename string) (map[string]interface{}, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
