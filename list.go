@@ -89,7 +89,19 @@ func IsExist(what interface{}, in interface{}) bool {
 	return false
 }
 
-// Filter a function that filters a list based on a given predicate function. The function returns a new list with the elements that satisfy the predicate function.
+// Filter returns a new list containing the elements of the input list that
+// satisfy the given predicate function. The predicate function takes an input
+// element of the list and returns true if the element should be included in the
+// output list, and false otherwise. The input list can contain elements of any
+// type, and the predicate function should take an argument of type interface{}.
+//
+// Example usage:
+//
+//	data := []interface{}{1, 2, 3, 4, 5}
+//	isEven := func(x interface{}) bool { return x.(int)%2 == 0 }
+//	result := Filter(data, isEven)  // result = []interface{}{2, 4}
+//
+// Playground: https://go.dev/play/p/haueBKmeb3e
 func Filter(data []interface{}, predicate func(interface{}) bool) []interface{} {
 	result := []interface{}{}
 	for _, d := range data {
