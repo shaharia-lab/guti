@@ -15,6 +15,37 @@ const epsilon = 1e-6
 // and objects. It uses reflection to determine the type of the items in the slice, and to compare them
 // to the search item. If the second argument is not a slice, it will panic. If the search item is not
 // of the same type as the items in the slice, it will be skipped.
+//
+// Example usage:
+//
+//	intSlice := []int{1, 2, 3, 4, 5}
+//	fmt.Println(guti.IsExist(3, intSlice)) // prints "true"
+//	fmt.Println(guti.IsExist(6, intSlice)) // prints "false"
+//
+//	strSlice := []string{"foo", "bar", "baz"}
+//	fmt.Println(guti.IsExist("qux", strSlice)) // prints "false"
+//	fmt.Println(guti.IsExist("foo", strSlice)) // prints "true"
+//
+//	objectSlice := []struct {
+//		Name string
+//		Age  int
+//	}{
+//		{Name: "Alice", Age: 25},
+//		{Name: "Bob", Age: 25},
+//		{Name: "Charlie", Age: 35},
+//	}
+//	fmt.Println(guti.IsExist(struct {
+//		Name string
+//		Age  int
+//	}{Name: "Bob", Age: 25}, objectSlice)) // prints "true"
+//
+//	boolSlice := []bool{true, false}
+//	fmt.Println(guti.IsExist(true, boolSlice)) // prints "true"
+//
+//	emptySlice := []int{}
+//	fmt.Println(guti.IsExist(1, emptySlice)) // prints "false"
+//
+// Playground: https://go.dev/play/p/jHua3iwd6xT
 func IsExist(what interface{}, in interface{}) bool {
 	s := reflect.ValueOf(in)
 
