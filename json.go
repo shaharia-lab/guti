@@ -3,7 +3,9 @@ package guti
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"reflect"
 )
 
 // JSONToMap takes a JSON byte array as input and returns a map containing the parsed JSON data.
@@ -115,4 +117,28 @@ func DeepMergeJSON(dst, src map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return dst
+}
+
+func flattenJSON(data interface{}, prefix string, flatMap map[string]interface{}) {
+	switch val := reflect.ValueOf(data); val.Kind() {
+	case reflect.String, reflect.Bool, reflect.Float64, reflect.Float32, reflect.Int, reflect.Int64:
+		flatMap[prefix] = val.Interface()
+	case reflect.Map:
+		for _, key := range val.MapKeys() {
+			var newKey string
+			if prefix == "" {
+				newKey = key.String()
+			} else {
+				newKey = prefix + "_" + key.String()
+			}
+			flattenJSON(val.MapIndex(key).Interface(), newKey, flatMap)
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < val.Len(); i++ {
+			newKey := fmt.Sprintf("%s_%d", prefix, i)
+			flattenJSON(val.Index(i).Interface(), newKey, flatMap)
+		}
+	default:
+		fmt.Println("Unsupported type:", val.Kind())
+	}
 }
