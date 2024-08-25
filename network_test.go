@@ -25,35 +25,6 @@ func TestGetPublicIP(t *testing.T) {
 	}
 }
 
-func TestGetFreePort(t *testing.T) {
-	tests := []struct {
-		name     string
-		expected int
-	}{
-		{
-			name:     "Test_case_1",
-			expected: 0,
-		},
-		{
-			name:     "Test_case_2",
-			expected: 0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			port, err := GetFreePort()
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if port <= 0 {
-				t.Errorf("expected port greater than 0, but got %v", port)
-			}
-		})
-	}
-}
-
 func TestGetLocalIPs(t *testing.T) {
 	ps, err := GetLocalIPs()
 	if err != nil {
@@ -254,4 +225,63 @@ func TestSendUDPPacket(t *testing.T) {
 
 	// Wait for a short time to ensure the mock server receives the packet
 	time.Sleep(100 * time.Millisecond)
+}
+
+func TestGetFreePortFromPortRange(t *testing.T) {
+	tests := []struct {
+		name    string
+		minPort int
+		maxPort int
+		wantErr bool
+		setup   func()
+		cleanup func()
+	}{
+		{
+			name:    "Valid range with free ports",
+			minPort: 10000,
+			maxPort: 10010,
+			wantErr: false,
+		},
+		{
+			name:    "Min port greater than max port",
+			minPort: 10000,
+			maxPort: 9000,
+			wantErr: true,
+		},
+		{
+			name:    "Single port in range",
+			minPort: 10000,
+			maxPort: 10000,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setup != nil {
+				tt.setup()
+			}
+			if tt.cleanup != nil {
+				defer tt.cleanup()
+			}
+
+			got, err := GetFreePortFromPortRange(tt.minPort, tt.maxPort)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFreePortFromPortRange() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				if got < tt.minPort || got > tt.maxPort {
+					t.Errorf("GetFreePortFromPortRange() got = %v, want between %v and %v", got, tt.minPort, tt.maxPort)
+				}
+				// Check if the port is actually free
+				l, err := net.Listen("tcp", fmt.Sprintf(":%d", got))
+				if err != nil {
+					t.Errorf("GetFreePortFromPortRange() returned port %v that is not free", got)
+				} else {
+					l.Close()
+				}
+			}
+		})
+	}
 }
