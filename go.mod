@@ -1,4 +1,4 @@
-module github.com/shahariaazam/guti
+module github.com/shaharia-lab/guti
 
 go 1.18
 
