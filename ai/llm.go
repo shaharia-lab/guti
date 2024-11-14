@@ -16,6 +16,6 @@ func NewLLMRequest(requestConfig LLMRequestConfig) *LLMRequest {
 
 // Generate sends a prompt to the specified LLM provider and returns the response.
 // Returns LLMResponse containing the generated text and metadata, or an error if the operation fails.
-func (r *LLMRequest) Generate(question string, llmProvider LLMProvider) (LLMResponse, error) {
-	return llmProvider.GetResponse(question, r.requestConfig)
+func (r *LLMRequest) Generate(messages []LLMMessage, llmProvider LLMProvider) (LLMResponse, error) {
+	return llmProvider.GetResponse(messages, r.requestConfig)
 }

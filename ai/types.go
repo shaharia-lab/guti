@@ -13,10 +13,10 @@ var DefaultConfig = LLMRequestConfig{
 
 // LLMRequestConfig defines configuration parameters for LLM requests.
 type LLMRequestConfig struct {
-	MaxToken    int
+	MaxToken    int64
 	TopP        float64
 	Temperature float64
-	TopK        int
+	TopK        int64
 }
 
 // NewRequestConfig creates a new config with default values.
@@ -36,7 +36,7 @@ func NewRequestConfig(opts ...RequestOption) LLMRequestConfig {
 type RequestOption func(*LLMRequestConfig)
 
 // WithMaxToken sets the max token value
-func WithMaxToken(maxToken int) RequestOption {
+func WithMaxToken(maxToken int64) RequestOption {
 	return func(c *LLMRequestConfig) {
 		if maxToken > 0 {
 			c.MaxToken = maxToken
@@ -63,7 +63,7 @@ func WithTemperature(temp float64) RequestOption {
 }
 
 // WithTopK sets the top-k value
-func WithTopK(topK int) RequestOption {
+func WithTopK(topK int64) RequestOption {
 	return func(c *LLMRequestConfig) {
 		if topK > 0 {
 			c.TopK = topK
@@ -98,10 +98,17 @@ func (e *LLMError) Error() string {
 	return fmt.Sprintf("LLMError %d: %s", e.Code, e.Message)
 }
 
+// LLMMessage represents a message in a conversation with an LLM.
+// It includes the role of the speaker (user, assistant, etc.) and the text of the message.
+type LLMMessage struct {
+	Role string
+	Text string
+}
+
 // LLMProvider defines the interface that all LLM providers must implement.
 // This allows for easy swapping between different LLM providers.
 type LLMProvider interface {
 	// GetResponse generates a response for the given question using the specified configuration.
 	// Returns LLMResponse containing the generated text and metadata, or an error if the operation fails.
-	GetResponse(question string, config LLMRequestConfig) (LLMResponse, error)
+	GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error)
 }

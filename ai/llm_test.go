@@ -10,7 +10,7 @@ type mockProvider struct {
 	err      error
 }
 
-func (m *mockProvider) GetResponse(_ string, _ LLMRequestConfig) (LLMResponse, error) {
+func (m *mockProvider) GetResponse(messages []LLMMessage, _ LLMRequestConfig) (LLMResponse, error) {
 	return m.response, m.err
 }
 
@@ -63,7 +63,10 @@ func TestLLMRequest_Generate(t *testing.T) {
 			}
 
 			request := NewLLMRequest(tt.config)
-			response, err := request.Generate("test prompt", provider)
+			response, err := request.Generate([]LLMMessage{{
+				Role: "user",
+				Text: "test prompt",
+			}}, provider)
 
 			if tt.expectedError {
 				if err == nil {

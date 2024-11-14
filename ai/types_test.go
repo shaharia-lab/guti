@@ -117,7 +117,7 @@ func TestNewRequestConfig(t *testing.T) {
 func TestWithMaxToken(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       int
+		input       int64
 		shouldApply bool
 	}{
 		{"positive value", 2000, true},
@@ -204,7 +204,7 @@ func TestWithTemperature(t *testing.T) {
 func TestWithTopK(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       int
+		input       int64
 		shouldApply bool
 	}{
 		{"valid value", 100, true},

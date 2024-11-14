@@ -20,32 +20,38 @@ type OpenAIProviderConfig struct {
 	Model  string
 }
 
-// NewOpenAILLMProvider creates a new OpenAI provider using the official SDK
 func NewOpenAILLMProvider(config OpenAIProviderConfig) *OpenAILLMProvider {
 	if config.Model == "" {
-		config.Model = openai.ChatModelGPT3_5Turbo
+		config.Model = string(openai.ChatModelGPT3_5Turbo)
 	}
 
-	client := openai.NewClient(
-		option.WithAPIKey(config.APIKey),
-	)
-
 	return &OpenAILLMProvider{
-		client: client,
+		client: openai.NewClient(option.WithAPIKey(config.APIKey)),
 		model:  config.Model,
 	}
 }
 
-// GetResponse implements the LLMProvider interface
-func (p *OpenAILLMProvider) GetResponse(question string, config LLMRequestConfig) (LLMResponse, error) {
+func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error) {
 	startTime := time.Now()
 
+	var openAIMessages []openai.ChatCompletionMessageParamUnion
+	for _, msg := range messages {
+		switch msg.Role {
+		case "user":
+			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
+		case "assistant":
+			openAIMessages = append(openAIMessages, openai.AssistantMessage(msg.Text))
+		case "system":
+			openAIMessages = append(openAIMessages, openai.SystemMessage(msg.Text))
+		default:
+			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
+		}
+	}
+
 	params := openai.ChatCompletionNewParams{
-		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-			openai.UserMessage(question),
-		}),
+		Messages:    openai.F(openAIMessages),
 		Model:       openai.F(openai.ChatModel(p.model)),
-		MaxTokens:   openai.Int(int64(config.MaxToken)),
+		MaxTokens:   openai.Int(config.MaxToken),
 		TopP:        openai.Float(config.TopP),
 		Temperature: openai.Float(config.Temperature),
 	}
@@ -56,10 +62,7 @@ func (p *OpenAILLMProvider) GetResponse(question string, config LLMRequestConfig
 	}
 
 	if len(completion.Choices) == 0 {
-		return LLMResponse{}, &LLMError{
-			Code:    400,
-			Message: "no choices in response",
-		}
+		return LLMResponse{}, &LLMError{Code: 400, Message: "no choices in response"}
 	}
 
 	return LLMResponse{
