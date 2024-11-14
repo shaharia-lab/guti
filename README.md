@@ -23,14 +23,14 @@
 ## Usage
 
 ```shell
-go get go get github.com/shaharia-lab/guti
+go get github.com/shaharia-lab/guti
 ```
 
 And start using like -
 
 ```golang
 import (
-    "go get github.com/shaharia-lab/guti"
+    "github.com/shaharia-lab/guti"
 )
 
 guti.ContainsAll()
