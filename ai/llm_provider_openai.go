@@ -1,161 +1,71 @@
-// Package ai provides a flexible interface for interacting with various Language Learning Models (LLMs).
 package ai
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"net/http"
+	"context"
 	"time"
+
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 )
 
-// OpenAILLMProvider implements the LLMProvider interface for OpenAI's API.
+// OpenAILLMProvider implements the LLMProvider interface using the official OpenAI SDK
 type OpenAILLMProvider struct {
-	apiKey     string
-	model      string
-	apiVersion string
-	baseURL    string
+	client *openai.Client
+	model  string
 }
 
-// OpenAIProviderConfig holds the configuration options for the OpenAI provider.
+// OpenAIProviderConfig holds configuration for OpenAI provider
 type OpenAIProviderConfig struct {
-	// APIKey is the authentication key for OpenAI's API
 	APIKey string
-	// Model specifies which OpenAI model to use (e.g., "gpt-3.5-turbo", "gpt-4")
-	Model string
-	// APIVersion specifies the API version to use (defaults to "v1")
-	APIVersion string
-	// BaseURL specifies the API endpoint (defaults to "https://api.openai.com")
-	BaseURL string
+	Model  string
 }
 
-// NewOpenAILLMProvider creates a new OpenAI provider with the specified configuration.
+// NewOpenAILLMProvider creates a new OpenAI provider using the official SDK
 func NewOpenAILLMProvider(config OpenAIProviderConfig) *OpenAILLMProvider {
-	if config.BaseURL == "" {
-		config.BaseURL = "https://api.openai.com"
-	}
-	if config.APIVersion == "" {
-		config.APIVersion = "v1"
-	}
 	if config.Model == "" {
-		config.Model = "gpt-3.5-turbo"
+		config.Model = openai.ChatModelGPT3_5Turbo
 	}
+
+	client := openai.NewClient(
+		option.WithAPIKey(config.APIKey),
+	)
 
 	return &OpenAILLMProvider{
-		apiKey:     config.APIKey,
-		model:      config.Model,
-		apiVersion: config.APIVersion,
-		baseURL:    config.BaseURL,
+		client: client,
+		model:  config.Model,
 	}
 }
 
-type openAIRequest struct {
-	Model       string        `json:"model"`
-	Messages    []chatMessage `json:"messages"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Temperature float64       `json:"temperature,omitempty"`
-	TopP        float64       `json:"top_p,omitempty"`
-}
-
-type chatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type openAIResponse struct {
-	ID      string   `json:"id"`
-	Object  string   `json:"object"`
-	Created int64    `json:"created"`
-	Model   string   `json:"model"`
-	Choices []choice `json:"choices"`
-	Usage   usage    `json:"usage"`
-}
-
-type choice struct {
-	Index        int         `json:"index"`
-	Message      chatMessage `json:"message"`
-	FinishReason string      `json:"finish_reason"`
-}
-
-type usage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
-}
-
-// GetResponse implements the LLMProvider interface for OpenAI.
+// GetResponse implements the LLMProvider interface
 func (p *OpenAILLMProvider) GetResponse(question string, config LLMRequestConfig) (LLMResponse, error) {
 	startTime := time.Now()
 
-	messages := []chatMessage{
-		{
-			Role:    "user",
-			Content: question,
-		},
+	params := openai.ChatCompletionNewParams{
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage(question),
+		}),
+		Model:       openai.F(openai.ChatModel(p.model)),
+		MaxTokens:   openai.Int(int64(config.MaxToken)),
+		TopP:        openai.Float(config.TopP),
+		Temperature: openai.Float(config.Temperature),
 	}
 
-	requestBody := openAIRequest{
-		Model:       p.model,
-		Messages:    messages,
-		MaxTokens:   config.MaxToken,
-		Temperature: config.Temperature,
-		TopP:        config.TopP,
-	}
-
-	jsonBody, err := json.Marshal(requestBody)
+	completion, err := p.client.Chat.Completions.New(context.Background(), params)
 	if err != nil {
-		return LLMResponse{}, fmt.Errorf("failed to marshal request body: %w", err)
+		return LLMResponse{}, err
 	}
 
-	endpoint := fmt.Sprintf("%s/%s/chat/completions", p.baseURL, p.apiVersion)
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return LLMResponse{}, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.apiKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return LLMResponse{}, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		var errorResponse struct {
-			Error struct {
-				Message string `json:"message"`
-				Type    string `json:"type"`
-				Code    int    `json:"code"`
-			} `json:"error"`
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return LLMResponse{}, &LLMError{
-				Code:    resp.StatusCode,
-				Message: fmt.Sprintf("API request failed with status %d", resp.StatusCode),
-			}
-		}
+	if len(completion.Choices) == 0 {
 		return LLMResponse{}, &LLMError{
-			Code:    errorResponse.Error.Code,
-			Message: fmt.Sprintf("%s (type: %s)", errorResponse.Error.Message, errorResponse.Error.Type),
+			Code:    400,
+			Message: "no choices in response",
 		}
-	}
-
-	var openAIResp openAIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&openAIResp); err != nil {
-		return LLMResponse{}, fmt.Errorf("failed to decode response body: %w", err)
-	}
-
-	if len(openAIResp.Choices) == 0 {
-		return LLMResponse{}, fmt.Errorf("no choices in response")
 	}
 
 	return LLMResponse{
-		Text:             openAIResp.Choices[0].Message.Content,
-		TotalInputToken:  openAIResp.Usage.PromptTokens,
-		TotalOutputToken: openAIResp.Usage.CompletionTokens,
+		Text:             completion.Choices[0].Message.Content,
+		TotalInputToken:  int(completion.Usage.PromptTokens),
+		TotalOutputToken: int(completion.Usage.CompletionTokens),
 		CompletionTime:   time.Since(startTime).Seconds(),
 	}, nil
 }
