@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.23.2
 
 require (
+	github.com/anthropics/anthropic-sdk-go v0.2.0-alpha.4
 	github.com/openai/openai-go v0.1.0-alpha.37
 	github.com/stretchr/testify v1.8.2
 )
