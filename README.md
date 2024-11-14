@@ -57,7 +57,7 @@ provider := ai.NewOpenAILLMProvider(ai.OpenAIProviderConfig{
 request := ai.NewLLMRequest(ai.NewRequestConfig())
 
 // Generate a response
-response, err := request.Generate("What is the capital of France?", provider)
+response, err := request.Generate([]LLMMessage{{Role: "user", Text: "What is the capital of France?"}}, provider)
 if err != nil {
     log.Fatal(err)
 }
@@ -135,7 +135,7 @@ You can implement the `LLMProvider` interface to add support for additional LLM 
 
 ```go
 type LLMProvider interface {
-    GetResponse(question string, config LLMRequestConfig) (LLMResponse, error)
+    GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error)
 }
 ```
 
