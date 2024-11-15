@@ -12,13 +12,13 @@ import (
 // OpenAILLMProvider implements the LLMProvider interface using the official OpenAI SDK
 type OpenAILLMProvider struct {
 	client *openai.Client
-	model  string
+	model  openai.ChatModel
 }
 
 // OpenAIProviderConfig holds configuration for OpenAI provider
 type OpenAIProviderConfig struct {
 	APIKey string
-	Model  string
+	Model  openai.ChatModel
 }
 
 // NewOpenAILLMProvider creates a new OpenAI provider with the specified configuration.
@@ -55,7 +55,7 @@ func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequest
 
 	params := openai.ChatCompletionNewParams{
 		Messages:    openai.F(openAIMessages),
-		Model:       openai.F(openai.ChatModel(p.model)),
+		Model:       openai.F(p.model),
 		MaxTokens:   openai.Int(config.MaxToken),
 		TopP:        openai.Float(config.TopP),
 		Temperature: openai.Float(config.Temperature),

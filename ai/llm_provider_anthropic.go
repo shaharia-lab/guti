@@ -13,15 +13,16 @@ import (
 // It provides access to Claude models through Anthropic's API.
 type AnthropicLLMProvider struct {
 	client *anthropic.Client
-	model  string
+	model  anthropic.Model
 }
 
 // AnthropicProviderConfig holds the configuration options for creating an Anthropic provider.
 type AnthropicProviderConfig struct {
 	// APIKey is the authentication key for Anthropic's API
 	APIKey string
+
 	// Model specifies which Anthropic model to use (e.g., "claude-3-opus-20240229", "claude-3-sonnet-20240229")
-	Model string
+	Model anthropic.Model
 }
 
 // NewAnthropicLLMProvider creates a new Anthropic provider with the specified configuration.
@@ -60,9 +61,9 @@ func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequ
 	}
 
 	params := anthropic.MessageNewParams{
-		Model:       anthropic.F(anthropic.Model(p.model)),
+		Model:       anthropic.F(p.model),
 		Messages:    anthropic.F(anthropicMessages),
-		MaxTokens:   anthropic.F(int64(config.MaxToken)),
+		MaxTokens:   anthropic.F(config.MaxToken),
 		TopP:        anthropic.Float(config.TopP),
 		Temperature: anthropic.Float(config.Temperature),
 	}
