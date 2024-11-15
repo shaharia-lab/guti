@@ -3,6 +3,20 @@ package ai
 
 import "fmt"
 
+// LLMMessageRole represents the role of a message in a conversation.
+type LLMMessageRole string
+
+const (
+	// UserRole represents a message from the user
+	UserRole LLMMessageRole = "user"
+
+	// AssistantRole represents a message from the assistant
+	AssistantRole LLMMessageRole = "assistant"
+
+	// SystemRole represents a message from the system
+	SystemRole LLMMessageRole = "system"
+)
+
 // DefaultConfig holds the default values for LLMRequestConfig
 var DefaultConfig = LLMRequestConfig{
 	MaxToken:    1000, // Default max tokens
@@ -76,10 +90,13 @@ func WithTopK(topK int64) RequestOption {
 type LLMResponse struct {
 	// Text contains the generated response from the model
 	Text string
+
 	// TotalInputToken is the number of tokens in the input prompt
 	TotalInputToken int
+
 	// TotalOutputToken is the number of tokens in the generated response
 	TotalOutputToken int
+
 	// CompletionTime is the total time taken to generate the response in seconds
 	CompletionTime float64
 }
@@ -89,6 +106,7 @@ type LLMResponse struct {
 type LLMError struct {
 	// Code represents the error code (usually HTTP status code for API errors)
 	Code int
+
 	// Message provides a detailed description of the error
 	Message string
 }
@@ -101,7 +119,7 @@ func (e *LLMError) Error() string {
 // LLMMessage represents a message in a conversation with an LLM.
 // It includes the role of the speaker (user, assistant, etc.) and the text of the message.
 type LLMMessage struct {
-	Role string
+	Role LLMMessageRole
 	Text string
 }
 

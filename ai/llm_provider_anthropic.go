@@ -47,11 +47,11 @@ func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequ
 	var anthropicMessages []anthropic.MessageParam
 	for _, msg := range messages {
 		switch msg.Role {
-		case "user":
+		case UserRole:
 			anthropicMessages = append(anthropicMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Text)))
-		case "assistant":
+		case AssistantRole:
 			anthropicMessages = append(anthropicMessages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Text)))
-		case "system":
+		case SystemRole:
 			// Anthropic handles system messages differently - we'll add it to params.System
 			continue
 		default:
@@ -69,7 +69,7 @@ func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequ
 
 	// Add system message if present
 	for _, msg := range messages {
-		if msg.Role == "system" {
+		if msg.Role == SystemRole {
 			params.System = anthropic.F([]anthropic.TextBlockParam{
 				anthropic.NewTextBlock(msg.Text),
 			})

@@ -25,7 +25,7 @@ type OpenAIProviderConfig struct {
 // If no model is specified, it defaults to GPT-3.5-turbo.
 func NewOpenAILLMProvider(config OpenAIProviderConfig) *OpenAILLMProvider {
 	if config.Model == "" {
-		config.Model = string(openai.ChatModelGPT3_5Turbo)
+		config.Model = openai.ChatModelGPT3_5Turbo
 	}
 
 	return &OpenAILLMProvider{
@@ -42,11 +42,11 @@ func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequest
 	var openAIMessages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range messages {
 		switch msg.Role {
-		case "user":
+		case UserRole:
 			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
-		case "assistant":
+		case AssistantRole:
 			openAIMessages = append(openAIMessages, openai.AssistantMessage(msg.Text))
-		case "system":
+		case SystemRole:
 			openAIMessages = append(openAIMessages, openai.SystemMessage(msg.Text))
 		default:
 			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))

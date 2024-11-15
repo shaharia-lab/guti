@@ -11,6 +11,7 @@ import (
 type LLMPromptTemplate struct {
 	// Template is the template string using Go's text/template syntax
 	Template string
+
 	// Data contains the values to be substituted in the template
 	Data map[string]interface{}
 }
