@@ -20,6 +20,8 @@ type OpenAIProviderConfig struct {
 	Model  string
 }
 
+// NewOpenAILLMProvider creates a new OpenAI provider with the specified configuration.
+// If no model is specified, it defaults to GPT-3.5-turbo.
 func NewOpenAILLMProvider(config OpenAIProviderConfig) *OpenAILLMProvider {
 	if config.Model == "" {
 		config.Model = string(openai.ChatModelGPT3_5Turbo)
@@ -31,6 +33,8 @@ func NewOpenAILLMProvider(config OpenAIProviderConfig) *OpenAILLMProvider {
 	}
 }
 
+// GetResponse generates a response using OpenAI's API for the given messages and configuration.
+// It supports different message roles (user, assistant, system) and handles them appropriately.
 func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error) {
 	startTime := time.Now()
 

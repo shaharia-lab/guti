@@ -1,3 +1,4 @@
+// Package ai provides a flexible interface for interacting with various Language Learning Models (LLMs).
 package ai
 
 import (
@@ -9,16 +10,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 )
 
+// BedrockLLMProvider implements the LLMProvider interface using AWS Bedrock's official Go SDK.
 type BedrockLLMProvider struct {
 	client *bedrockruntime.Client
 	model  string
 }
 
+// BedrockProviderConfig holds the configuration options for creating a Bedrock provider.
 type BedrockProviderConfig struct {
 	Client *bedrockruntime.Client
 	Model  string
 }
 
+// NewBedrockLLMProvider creates a new Bedrock provider with the specified configuration.
+// If no model is specified, it defaults to Claude 3.5 Sonnet.
 func NewBedrockLLMProvider(config BedrockProviderConfig) *BedrockLLMProvider {
 	if config.Model == "" {
 		config.Model = "anthropic.claude-3-5-sonnet-20240620-v1:0"
@@ -30,6 +35,8 @@ func NewBedrockLLMProvider(config BedrockProviderConfig) *BedrockLLMProvider {
 	}
 }
 
+// GetResponse generates a response using Bedrock's API for the given messages and configuration.
+// It supports different message roles (user, assistant) and handles them appropriately.
 func (p *BedrockLLMProvider) GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error) {
 	startTime := time.Now()
 
