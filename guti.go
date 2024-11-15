@@ -50,6 +50,25 @@ func GetTypeName(myvar interface{}) string {
 // The method is designed to work with any kind of struct, as long as it is represented
 // as a map or a slice of interfaces. It can be used for testing, data validation,
 // or any other use case where you need to compare two structs for equality.
+//
+// Example usage:
+//
+//	type People struct {
+//		Age int
+//	}
+//	type ExampleStruct struct {
+//		Name   string
+//		People People
+//	}
+//
+//	struct1 := ExampleStruct{Name: "John Doe", People: People{Age: 30}}
+//	struct2 := ExampleStruct{Name: "John Doe", People: People{Age: 40}}
+//	struct3 := ExampleStruct{Name: "John Doe", People: People{Age: 30}}
+//
+//	fmt.Println(guti.CompareStructs(struct1, struct3)) // should return true
+//	fmt.Println(guti.CompareStructs(struct1, struct2)) // should return false
+//
+// Playground: https://go.dev/play/p/GT_7bK_BRro
 func CompareStructs(s1 interface{}, s2 interface{}) bool {
 	if reflect.TypeOf(s1) != reflect.TypeOf(s2) {
 		return false
