@@ -13,7 +13,7 @@ func TestEmbeddingService_GenerateEmbedding(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    interface{}
-		model    string
+		model    EmbeddingModel
 		response EmbeddingResponse
 		wantErr  bool
 	}{
@@ -55,7 +55,7 @@ func TestEmbeddingService_GenerateEmbedding(t *testing.T) {
 						Index:     1,
 					},
 				},
-				Model: "all-MiniLM-L6-v2",
+				Model: EmbeddingModelAllMiniLML6V2,
 				Usage: Usage{
 					PromptTokens: 4,
 					TotalTokens:  4,

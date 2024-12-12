@@ -9,6 +9,14 @@ import (
 	"net/http"
 )
 
+type EmbeddingModel string
+
+const (
+	EmbeddingModelAllMiniLML6V2                     EmbeddingModel = "all-MiniLM-L6-v2"
+	EmbeddingModelAllMpnetBaseV2                    EmbeddingModel = "all-mpnet-base-v2"
+	EmbeddingModelParaphraseMultilingualMiniLML12V2 EmbeddingModel = "paraphrase-multilingual-MiniLM-L12-v2"
+)
+
 // EmbeddingProvider defines the interface for services that can generate embeddings from text.
 type EmbeddingProvider interface {
 	GenerateEmbedding(ctx context.Context, input interface{}, model string) (*EmbeddingResponse, error)
@@ -31,7 +39,7 @@ type Usage struct {
 type EmbeddingResponse struct {
 	Object string            `json:"object"`
 	Data   []EmbeddingObject `json:"data"`
-	Model  string            `json:"model"`
+	Model  EmbeddingModel    `json:"model"`
 	Usage  Usage             `json:"usage"`
 }
 
@@ -53,13 +61,13 @@ func NewEmbeddingService(baseURL string, httpClient *http.Client) *EmbeddingServ
 }
 
 type embeddingRequest struct {
-	Input          interface{} `json:"input"`
-	Model          string      `json:"model"`
-	EncodingFormat string      `json:"encoding_format"`
+	Input          interface{}    `json:"input"`
+	Model          EmbeddingModel `json:"model"`
+	EncodingFormat string         `json:"encoding_format"`
 }
 
 // GenerateEmbedding implements the EmbeddingProvider interface.
-func (s *EmbeddingService) GenerateEmbedding(ctx context.Context, input interface{}, model string) (*EmbeddingResponse, error) {
+func (s *EmbeddingService) GenerateEmbedding(ctx context.Context, input interface{}, model EmbeddingModel) (*EmbeddingResponse, error) {
 	reqBody := embeddingRequest{
 		Input:          input,
 		Model:          model,
