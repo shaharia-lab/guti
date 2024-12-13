@@ -30,23 +30,99 @@ func GetPublicIP() (string, error) {
 	return string(ip), nil
 }
 
-// GetFreePort returns a free TCP port on the local machine by binding to a random port and immediately releasing the connection
+// IsPortAvailable checks if a given port is available for use.
+//
+// This function attempts to bind to the specified port and then immediately
+// releases it. It also performs a secondary check by trying to establish a
+// connection to the port.
+//
+// Parameters:
+//   - port: The port number to check for availability.
+//
+// Returns:
+//   - bool: true if the port is available, false otherwise.
+//
+// Note: This function may return false positives in rare cases where the port
+// becomes occupied immediately after the check. For more reliable results in
+// concurrent environments, consider using port locking mechanisms.
+func IsPortAvailable(port int) bool {
+	addr := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return false
+	}
+	listener.Close()
+
+	// Double-check if the port is really available
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), 100*time.Millisecond)
+	if err != nil {
+		return true
+	}
+	if conn != nil {
+		conn.Close()
+	}
+	return false
+}
+
+// GetFreePort returns a free TCP port on the local machine.
+//
+// This function attempts to bind to a random port assigned by the operating system,
+// then checks its availability using IsPortAvailable.
+//
+// Returns:
+//   - int: The available port number.
+//   - error: An error if no port could be obtained or if the port is not available.
+//
+// Note: There's a small chance that the port might become unavailable immediately
+// after this function returns. In concurrent environments, implement additional
+// synchronization if necessary.
 func GetFreePort() (int, error) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to bind to a port: %w", err)
 	}
 	defer listener.Close()
+
 	addr := listener.Addr().String()
 	_, portStr, err := net.SplitHostPort(addr)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to split host and port: %w", err)
 	}
+
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to convert port to integer: %w", err)
 	}
-	return port, nil
+
+	if IsPortAvailable(port) {
+		return port, nil
+	}
+
+	return 0, fmt.Errorf("port %d is not available", port)
+}
+
+// GetFreePortFromPortRange returns a free TCP port within the specified range.
+//
+// This function iterates through the given port range and returns the first
+// available port it finds.
+//
+// Parameters:
+//   - minPort: The lower bound of the port range to search (inclusive).
+//   - maxPort: The upper bound of the port range to search (inclusive).
+//
+// Returns:
+//   - int: An available port number within the specified range.
+//   - error: An error if no free ports are found in the given range.
+//
+// Note: This function may be slower than GetFreePort for large ranges. Consider
+// using GetFreePort if you don't need a port in a specific range.
+func GetFreePortFromPortRange(minPort, maxPort int) (int, error) {
+	for port := minPort; port <= maxPort; port++ {
+		if IsPortAvailable(port) {
+			return port, nil
+		}
+	}
+	return 0, fmt.Errorf("no free ports found in range %d-%d", minPort, maxPort)
 }
 
 // GetLocalIPs returns a slice of IP addresses for all network interfaces on the local machine
