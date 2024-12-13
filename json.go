@@ -19,6 +19,8 @@ import (
 //	result, err := JSONToMap(data)
 //	fmt.Println(result["name"])  // prints "John Doe"
 //	fmt.Println(result["age"])   // prints 30
+//
+// Playground: https://go.dev/play/p/Tcecnf8wlEb
 func JSONToMap(data []byte) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal(data, &result)
@@ -38,6 +40,8 @@ func JSONToMap(data []byte) (map[string]interface{}, error) {
 //	data := map[string]interface{}{"name": "John", "age": 30}
 //	result, err := JSONToString(data)
 //	fmt.Println(result)   // prints '{"age":30,"name":"John"}'
+//
+// Playground: https://go.dev/play/p/PFc88pqp3CD
 func JSONToString(data interface{}) (string, error) {
 	b, err := json.Marshal(data)
 	return string(b), err
@@ -60,6 +64,8 @@ func JSONToString(data interface{}) (string, error) {
 //	} else {
 //		fmt.Println(result)
 //	}
+//
+// Playground: https://go.dev/play/p/Tk0pqxI5E8A
 func JSONFileToMap(filename string) (map[string]interface{}, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -100,6 +106,8 @@ func JSONFileToMap(filename string) (map[string]interface{}, error) {
 //	}
 //	result := DeepMergeJSON(dst, src)
 //	fmt.Println(result)
+//
+// Playground: https://go.dev/play/p/zAZieDE3OUf
 func DeepMergeJSON(dst, src map[string]interface{}) map[string]interface{} {
 	for key, srcVal := range src {
 		if dstVal, ok := dst[key]; ok {
