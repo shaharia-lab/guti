@@ -139,6 +139,38 @@ type LLMProvider interface {
 }
 ```
 
+#### Generate Embedding Vector
+
+You can generate embeddings using the provider-based approach:
+
+```go
+import (
+    "github.com/shaharia-lab/guti/ai"
+)
+
+// Create an embedding provider
+provider := ai.NewLocalEmbeddingProvider(ai.LocalProviderConfig{
+    BaseURL: "http://localhost:8000",
+    Client:  &http.Client{},
+})
+
+// Generate embedding
+embedding, err := provider.GenerateEmbedding(context.Background(), "Hello world", ai.EmbeddingModelAllMiniLML6V2)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Embedding vector: %+v\n", embedding)
+```
+
+The library supports multiple embedding providers. You can implement the `EmbeddingProvider` interface to add support for additional providers:
+
+```go
+type EmbeddingProvider interface {
+    GenerateEmbedding(ctx context.Context, text string, model EmbeddingModel) ([]float32, error)
+}
+```
+
 ## Documentation
 
 Full documentation is available on [pkg.go.dev/github.com/shaharia-lab/guti](https://pkg.go.dev/github.com/shaharia-lab/guti#section-documentation)

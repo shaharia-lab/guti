@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - uses: actions/setup-go@v3
         with:
-          go-version: '^1.20'
+          go-version: '^1.21'
           check-latest: true
           cache: true
 
@@ -35,12 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Go ^1.20
+      - name: Set up Go ^1.21
         uses: actions/setup-go@v3
         with:
-          go-version: '^1.20'
+          go-version: '^1.21'
 
       - name: Test
         run: go test ./... -covermode=atomic -coverprofile=coverage.out
@@ -59,7 +59,7 @@ jobs:
     needs: test
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
