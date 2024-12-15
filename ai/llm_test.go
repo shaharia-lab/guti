@@ -62,11 +62,11 @@ func TestLLMRequest_Generate(t *testing.T) {
 				err:      tt.mockError,
 			}
 
-			request := NewLLMRequest(tt.config)
+			request := NewLLMRequest(tt.config, provider)
 			response, err := request.Generate([]LLMMessage{{
 				Role: "user",
 				Text: "test prompt",
-			}}, provider)
+			}})
 
 			if tt.expectedError {
 				if err == nil {
