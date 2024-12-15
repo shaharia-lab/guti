@@ -8,7 +8,25 @@ type LLMRequest struct {
 	provider      LLMProvider
 }
 
-// NewLLMRequest creates a new LLMRequest with the specified configuration.
+// NewLLMRequest creates a new LLMRequest with the specified configuration and provider.
+// The provider parameter allows injecting different LLM implementations (OpenAI, Anthropic, etc.).
+//
+// Example usage:
+//
+//	// Create provider
+//	provider := ai.NewOpenAILLMProvider(ai.OpenAIProviderConfig{
+//	    APIKey: "your-api-key",
+//	    Model:  "gpt-3.5-turbo",
+//	})
+//
+//	// Configure request options
+//	config := ai.NewRequestConfig(
+//	    ai.WithMaxToken(2000),
+//	    ai.WithTemperature(0.7),
+//	)
+//
+//	// Create LLM request client
+//	llm := ai.NewLLMRequest(config, provider)
 func NewLLMRequest(config LLMRequestConfig, provider LLMProvider) *LLMRequest {
 	return &LLMRequest{
 		requestConfig: config,
@@ -16,8 +34,28 @@ func NewLLMRequest(config LLMRequestConfig, provider LLMProvider) *LLMRequest {
 	}
 }
 
-// Generate sends a prompt to the specified LLM provider and returns the response.
-// Returns LLMResponse containing the generated text and metadata, or an error if the operation fails.
+// Generate sends messages to the configured LLM provider and returns the response.
+// It uses the provider and configuration specified during initialization.
+//
+// Example usage:
+//
+//	messages := []ai.LLMMessage{
+//	    {Role: ai.SystemRole, Text: "You are a helpful assistant"},
+//	    {Role: ai.UserRole, Text: "What is the capital of France?"},
+//	}
+//
+//	response, err := llm.Generate(messages)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Printf("Response: %s\n", response.Text)
+//	fmt.Printf("Tokens used: %d\n", response.TotalOutputToken)
+//
+// The method returns LLMResponse containing:
+//   - Generated text
+//   - Token usage statistics
+//   - Completion time
+//   - Other provider-specific metadata
 func (r *LLMRequest) Generate(messages []LLMMessage) (LLMResponse, error) {
 	return r.provider.GetResponse(messages, r.requestConfig)
 }
