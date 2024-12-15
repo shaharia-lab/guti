@@ -77,3 +77,82 @@ func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequest
 		CompletionTime:   time.Since(startTime).Seconds(),
 	}, nil
 }
+
+// GetStreamingResponse generates a streaming response using OpenAI's API.
+// It supports streaming tokens as they're generated and handles context cancellation.
+//
+// Example usage:
+//
+//	provider := NewOpenAILLMProvider(OpenAIProviderConfig{APIKey: "key"})
+//	stream, err := provider.GetStreamingResponse(ctx, messages, config)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	for response := range stream {
+//	    if response.Error != nil {
+//	        break
+//	    }
+//	    fmt.Print(response.Text)
+//	}
+func (p *OpenAILLMProvider) GetStreamingResponse(ctx context.Context, messages []LLMMessage, config LLMRequestConfig) (<-chan StreamingLLMResponse, error) {
+	var openAIMessages []openai.ChatCompletionMessageParamUnion
+	for _, msg := range messages {
+		switch msg.Role {
+		case UserRole:
+			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
+		case AssistantRole:
+			openAIMessages = append(openAIMessages, openai.AssistantMessage(msg.Text))
+		case SystemRole:
+			openAIMessages = append(openAIMessages, openai.SystemMessage(msg.Text))
+		default:
+			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
+		}
+	}
+
+	params := openai.ChatCompletionNewParams{
+		Messages:    openai.F(openAIMessages),
+		Model:       openai.F(p.model),
+		MaxTokens:   openai.Int(config.MaxToken),
+		TopP:        openai.Float(config.TopP),
+		Temperature: openai.Float(config.Temperature),
+	}
+
+	stream := p.client.Chat.Completions.NewStreaming(ctx, params)
+	responseChan := make(chan StreamingLLMResponse, 100)
+
+	go func() {
+		defer close(responseChan)
+
+		for stream.Next() {
+			select {
+			case <-ctx.Done():
+				responseChan <- StreamingLLMResponse{
+					Error: ctx.Err(),
+					Done:  true,
+				}
+				return
+			default:
+				chunk := stream.Current()
+				if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
+					responseChan <- StreamingLLMResponse{
+						Text:       chunk.Choices[0].Delta.Content,
+						TokenCount: 1,
+					}
+				}
+			}
+		}
+
+		if err := stream.Err(); err != nil {
+			responseChan <- StreamingLLMResponse{
+				Error: err,
+				Done:  true,
+			}
+			return
+		}
+
+		responseChan <- StreamingLLMResponse{Done: true}
+	}()
+
+	return responseChan, nil
+}

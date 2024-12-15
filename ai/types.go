@@ -1,7 +1,10 @@
 // Package ai provides a flexible interface for interacting with various Language Learning Models (LLMs).
 package ai
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // LLMMessageRole represents the role of a message in a conversation.
 type LLMMessageRole string
@@ -123,10 +126,24 @@ type LLMMessage struct {
 	Text string
 }
 
+// StreamingLLMResponse represents a chunk of streaming response from an LLM provider.
+// It contains partial text, completion status, any errors, and token usage information.
+type StreamingLLMResponse struct {
+	// Text contains the partial response text
+	Text string
+	// Done indicates if this is the final chunk
+	Done bool
+	// Error contains any error that occurred during streaming
+	Error error
+	// TokenCount is the number of tokens in this chunk
+	TokenCount int
+}
+
 // LLMProvider defines the interface that all LLM providers must implement.
 // This allows for easy swapping between different LLM providers.
 type LLMProvider interface {
 	// GetResponse generates a response for the given question using the specified configuration.
 	// Returns LLMResponse containing the generated text and metadata, or an error if the operation fails.
 	GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error)
+	GetStreamingResponse(ctx context.Context, messages []LLMMessage, config LLMRequestConfig) (<-chan StreamingLLMResponse, error)
 }

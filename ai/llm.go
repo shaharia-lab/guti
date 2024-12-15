@@ -1,6 +1,8 @@
 // Package ai provides a flexible interface for interacting with various Language Learning Models (LLMs).
 package ai
 
+import "context"
+
 // LLMRequest handles the configuration and execution of LLM requests.
 // It provides a consistent interface for interacting with different LLM providers.
 type LLMRequest struct {
@@ -58,4 +60,31 @@ func NewLLMRequest(config LLMRequestConfig, provider LLMProvider) *LLMRequest {
 //   - Other provider-specific metadata
 func (r *LLMRequest) Generate(messages []LLMMessage) (LLMResponse, error) {
 	return r.provider.GetResponse(messages, r.requestConfig)
+}
+
+// GenerateStream creates a streaming response channel for the given messages.
+// It returns a channel that receives StreamingLLMResponse chunks and an error if initialization fails.
+//
+// Example usage:
+//
+//	request := NewLLMRequest(config)
+//	stream, err := request.GenerateStream(context.Background(), []LLMMessage{
+//	    {Role: UserRole, Text: "Tell me a story"},
+//	})
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	for response := range stream {
+//	    if response.Error != nil {
+//	        log.Printf("Error: %v", response.Error)
+//	        break
+//	    }
+//	    if response.Done {
+//	        break
+//	    }
+//	    fmt.Print(response.Text)
+//	}
+func (r *LLMRequest) GenerateStream(ctx context.Context, messages []LLMMessage) (<-chan StreamingLLMResponse, error) {
+	return r.provider.GetStreamingResponse(ctx, messages, r.requestConfig)
 }
