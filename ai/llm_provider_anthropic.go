@@ -50,21 +50,21 @@ func NewAnthropicLLMProvider(config AnthropicProviderConfig) *AnthropicLLMProvid
 	}
 }
 
-// GetResponse generates a response using Anthropic's API for the given messages and configuration.
-// It supports different message roles (user, assistant, system) and handles them appropriately.
-// System messages are handled separately through Anthropic's system parameter.
-func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error) {
-	startTime := time.Now()
-
+// prepareMessageParams creates the Anthropic message parameters from LLM messages and config.
+// This is an internal helper function to reduce code duplication.
+func (p *AnthropicLLMProvider) prepareMessageParams(messages []LLMMessage, config LLMRequestConfig) anthropic.MessageNewParams {
 	var anthropicMessages []anthropic.MessageParam
+	var systemMessage string
+
+	// Process messages based on their role
 	for _, msg := range messages {
 		switch msg.Role {
+		case SystemRole:
+			systemMessage = msg.Text
 		case UserRole:
 			anthropicMessages = append(anthropicMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Text)))
 		case AssistantRole:
 			anthropicMessages = append(anthropicMessages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Text)))
-		case SystemRole:
-			continue
 		default:
 			anthropicMessages = append(anthropicMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Text)))
 		}
@@ -79,15 +79,22 @@ func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequ
 	}
 
 	// Add system message if present
-	for _, msg := range messages {
-		if msg.Role == SystemRole {
-			params.System = anthropic.F([]anthropic.TextBlockParam{
-				anthropic.NewTextBlock(msg.Text),
-			})
-			break
-		}
+	if systemMessage != "" {
+		params.System = anthropic.F([]anthropic.TextBlockParam{
+			anthropic.NewTextBlock(systemMessage),
+		})
 	}
 
+	return params
+}
+
+// GetResponse generates a response using Anthropic's API for the given messages and configuration.
+// It supports different message roles (user, assistant, system) and handles them appropriately.
+// System messages are handled separately through Anthropic's system parameter.
+func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error) {
+	startTime := time.Now()
+
+	params := p.prepareMessageParams(messages, config)
 	message, err := p.client.CreateMessage(context.Background(), params)
 	if err != nil {
 		return LLMResponse{}, err
@@ -132,42 +139,8 @@ func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequ
 //	    }
 //	    fmt.Print(chunk.Text)
 //	}
-//
-// GetStreamingResponse generates a streaming response using Anthropic's API.
 func (p *AnthropicLLMProvider) GetStreamingResponse(ctx context.Context, messages []LLMMessage, config LLMRequestConfig) (<-chan StreamingLLMResponse, error) {
-	// Create parameters for the API call
-	var anthropicMessages []anthropic.MessageParam
-	var systemMessage string
-
-	// Process messages based on their role
-	for _, msg := range messages {
-		switch msg.Role {
-		case SystemRole:
-			systemMessage = msg.Text
-		case UserRole:
-			anthropicMessages = append(anthropicMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Text)))
-		case AssistantRole:
-			anthropicMessages = append(anthropicMessages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Text)))
-		default:
-			anthropicMessages = append(anthropicMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Text)))
-		}
-	}
-
-	params := anthropic.MessageNewParams{
-		Model:       anthropic.F(p.model),
-		Messages:    anthropic.F(anthropicMessages),
-		MaxTokens:   anthropic.F(config.MaxToken),
-		TopP:        anthropic.Float(config.TopP),
-		Temperature: anthropic.Float(config.Temperature),
-	}
-
-	// Add system message if present
-	if systemMessage != "" {
-		params.System = anthropic.F([]anthropic.TextBlockParam{
-			anthropic.NewTextBlock(systemMessage),
-		})
-	}
-
+	params := p.prepareMessageParams(messages, config)
 	stream := p.client.CreateStreamingMessage(ctx, params)
 	responseChan := make(chan StreamingLLMResponse, 100)
 
