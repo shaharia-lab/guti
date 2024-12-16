@@ -47,9 +47,10 @@ Basic text generation with LLMs:
 ```go
 import "github.com/shaharia-lab/guti/ai"
 
-// Create an OpenAI provider
+// Create OpenAI client and provider
+client := ai.NewRealOpenAIClient("your-api-key",option.WithHTTPClient(&http.Client{Timeout: 30 * time.Second}))
 provider := ai.NewOpenAILLMProvider(ai.OpenAIProviderConfig{
-    APIKey: "your-api-key",
+    Client: client,
     Model:  "gpt-3.5-turbo", // Optional, defaults to gpt-3.5-turbo
 })
 
@@ -71,6 +72,7 @@ if err != nil {
 
 fmt.Printf("Response: %s\n", response.Text)
 fmt.Printf("Tokens used: %d\n", response.TotalOutputToken)
+
 ```
 
 #### Streaming Responses
@@ -170,14 +172,43 @@ response, err := request.Generate([]ai.LLMMessage{
 Implement the provider interfaces to add support for additional services:
 
 ```go
+// LLM Provider interface
 type LLMProvider interface {
     GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error)
     GetStreamingResponse(ctx context.Context, messages []LLMMessage, config LLMRequestConfig) (<-chan StreamingLLMResponse, error)
 }
 
+// OpenAI specific client interface
+type OpenAIClient interface {
+    CreateCompletion(ctx context.Context, params openai.ChatCompletionNewParams) (*openai.ChatCompletion, error)
+    CreateStreamingCompletion(ctx context.Context, params openai.ChatCompletionNewParams) *ssestream.Stream[openai.ChatCompletionChunk]
+}
+
+// Embedding Provider interface
 type EmbeddingProvider interface {
     GenerateEmbedding(ctx context.Context, input interface{}, model string) (*EmbeddingResponse, error)
 }
+```
+
+The LLM providers now support dependency injection, allowing for better testability and configuration:
+
+```go
+// OpenAI with custom client
+client := ai.NewRealOpenAIClient(
+    "your-api-key",
+    option.WithHTTPClient(&http.Client{Timeout: 30 * time.Second}),
+)
+provider := ai.NewOpenAILLMProvider(ai.OpenAIProviderConfig{
+    Client: client,
+    Model:  "gpt-4",
+})
+
+// Anthropic with custom client
+client := ai.NewRealAnthropicClient("your-api-key")
+provider := ai.NewAnthropicLLMProvider(ai.AnthropicProviderConfig{
+    Client: client,
+    Model:  "claude-3-sonnet-20240229",
+})
 ```
 
 ## Documentation
