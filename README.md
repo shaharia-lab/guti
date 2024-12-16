@@ -38,70 +38,67 @@ guti.ContainsAll()
 
 ### AI Operations
 
-The `ai` package provides a flexible interface for interacting with various Language Learning Models (LLMs). Currently supports OpenAI's GPT models with an extensible interface for other providers.
+The `ai` package provides a flexible interface for interacting with various Language Learning Models (LLMs), supporting both regular and streaming responses.
 
 #### Basic Usage
 
 ```go
-import (
-    "github.com/shaharia-lab/guti/ai"
-)
+import "github.com/shaharia-lab/guti/ai"
 
-// Create an OpenAI provider
+// Create provider and request
 provider := ai.NewOpenAILLMProvider(ai.OpenAIProviderConfig{
     APIKey: "your-api-key",
     Model:  "gpt-3.5-turbo", // Optional, defaults to gpt-3.5-turbo
 })
+request := ai.NewLLMRequest(ai.NewRequestConfig(), provider)
 
-// Create a request with default configuration
-request := ai.NewLLMRequest(ai.NewRequestConfig())
+// Generate response
+response, err := request.Generate([]LLMMessage{
+    {Role: "user", Text: "What is the capital of France?"},
+})
+```
 
-// Generate a response
-response, err := request.Generate([]LLMMessage{{Role: "user", Text: "What is the capital of France?"}}, provider)
+#### Streaming Responses
+
+```go
+stream, err := request.GenerateStream(context.Background(), []LLMMessage{
+    {Role: "user", Text: "Tell me a story"},
+})
 if err != nil {
     log.Fatal(err)
 }
 
-fmt.Printf("Response: %s\n", response.Text)
-fmt.Printf("Input tokens: %d\n", response.TotalInputToken)
-fmt.Printf("Output tokens: %d\n", response.TotalOutputToken)
-fmt.Printf("Completion time: %.2f seconds\n", response.CompletionTime)
+for response := range stream {
+    if response.Error != nil {
+        break
+    }
+    fmt.Print(response.Text)
+}
 ```
 
 #### Custom Configuration
 
-You can customize the LLM request configuration using the functional options pattern:
-
 ```go
-// Use specific configuration options
 config := ai.NewRequestConfig(
     ai.WithMaxToken(2000),
     ai.WithTemperature(0.8),
     ai.WithTopP(0.95),
-    ai.WithTopK(100),
 )
-
 request := ai.NewLLMRequest(config)
 ```
 
 #### Using Templates
 
-The package also supports templated prompts:
-
 ```go
 template := &ai.LLMPromptTemplate{
-    Template: "Hello {{.Name}}! Please tell me about {{.Topic}}.",
+    Template: "Hello {{.Name}}! Tell me about {{.Topic}}.",
     Data: map[string]interface{}{
         "Name":  "Alice",
-        "Topic": "artificial intelligence",
+        "Topic": "AI",
     },
 }
 
 prompt, err := template.Parse()
-if err != nil {
-    log.Fatal(err)
-}
-
 response, err := request.Generate(prompt, provider)
 ```
 
@@ -109,24 +106,20 @@ response, err := request.Generate(prompt, provider)
 
 | Option      | Default | Description                          |
 |-------------|---------|--------------------------------------|
-| MaxToken    | 1000    | Maximum number of tokens to generate |
+| MaxToken    | 1000    | Maximum tokens to generate           |
 | TopP        | 0.9     | Nucleus sampling parameter (0-1)     |
 | Temperature | 0.7     | Randomness in output (0-2)           |
 | TopK        | 50      | Top-k sampling parameter             |
 
-#### Error Handling
-
-The package provides structured error handling:
+#### Generate Embeddings
 
 ```go
-response, err := request.Generate(prompt, provider)
-if err != nil {
-    if llmErr, ok := err.(*ai.LLMError); ok {
-        fmt.Printf("LLM Error %d: %s\n", llmErr.Code, llmErr.Message)
-    } else {
-        fmt.Printf("Error: %v\n", err)
-    }
-}
+provider := ai.NewEmbeddingService("http://localhost:8000", nil)
+embedding, err := provider.GenerateEmbedding(
+    context.Background(),
+    "Hello world",
+    ai.EmbeddingModelAllMiniLML6V2,
+)
 ```
 
 #### Custom Providers
