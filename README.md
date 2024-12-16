@@ -38,6 +38,8 @@ guti.ContainsAll()
 
 ### AI Operations
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/shaharia-lab/guti/ai.svg)](https://pkg.go.dev/github.com/shaharia-lab/guti/ai)
+
 The `ai` package provides a comprehensive interface for working with Language Learning Models (LLMs) and embedding models. It supports multiple providers (OpenAI, Anthropic), streaming responses, and various embedding models.
 
 #### LLM Integration
