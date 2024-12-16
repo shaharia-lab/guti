@@ -34,11 +34,8 @@ func NewOpenAILLMProvider(config OpenAIProviderConfig) *OpenAILLMProvider {
 	}
 }
 
-// GetResponse generates a response using OpenAI's API for the given messages and configuration.
-// It supports different message roles (user, assistant, system) and handles them appropriately.
-func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error) {
-	startTime := time.Now()
-
+// convertToOpenAIMessages converts internal message format to OpenAI's format
+func (p *OpenAILLMProvider) convertToOpenAIMessages(messages []LLMMessage) []openai.ChatCompletionMessageParamUnion {
 	var openAIMessages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range messages {
 		switch msg.Role {
@@ -52,14 +49,27 @@ func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequest
 			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
 		}
 	}
+	return openAIMessages
+}
 
-	params := openai.ChatCompletionNewParams{
-		Messages:    openai.F(openAIMessages),
+// createCompletionParams creates OpenAI API parameters from request config
+func (p *OpenAILLMProvider) createCompletionParams(messages []openai.ChatCompletionMessageParamUnion, config LLMRequestConfig) openai.ChatCompletionNewParams {
+	return openai.ChatCompletionNewParams{
+		Messages:    openai.F(messages),
 		Model:       openai.F(p.model),
 		MaxTokens:   openai.Int(config.MaxToken),
 		TopP:        openai.Float(config.TopP),
 		Temperature: openai.Float(config.Temperature),
 	}
+}
+
+// GetResponse generates a response using OpenAI's API for the given messages and configuration.
+// It supports different message roles (user, assistant, system) and handles them appropriately.
+func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error) {
+	startTime := time.Now()
+
+	openAIMessages := p.convertToOpenAIMessages(messages)
+	params := p.createCompletionParams(openAIMessages, config)
 
 	completion, err := p.client.Chat.Completions.New(context.Background(), params)
 	if err != nil {
@@ -80,43 +90,9 @@ func (p *OpenAILLMProvider) GetResponse(messages []LLMMessage, config LLMRequest
 
 // GetStreamingResponse generates a streaming response using OpenAI's API.
 // It supports streaming tokens as they're generated and handles context cancellation.
-//
-// Example usage:
-//
-//	provider := NewOpenAILLMProvider(OpenAIProviderConfig{APIKey: "key"})
-//	stream, err := provider.GetStreamingResponse(ctx, messages, config)
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//
-//	for response := range stream {
-//	    if response.Error != nil {
-//	        break
-//	    }
-//	    fmt.Print(response.Text)
-//	}
 func (p *OpenAILLMProvider) GetStreamingResponse(ctx context.Context, messages []LLMMessage, config LLMRequestConfig) (<-chan StreamingLLMResponse, error) {
-	var openAIMessages []openai.ChatCompletionMessageParamUnion
-	for _, msg := range messages {
-		switch msg.Role {
-		case UserRole:
-			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
-		case AssistantRole:
-			openAIMessages = append(openAIMessages, openai.AssistantMessage(msg.Text))
-		case SystemRole:
-			openAIMessages = append(openAIMessages, openai.SystemMessage(msg.Text))
-		default:
-			openAIMessages = append(openAIMessages, openai.UserMessage(msg.Text))
-		}
-	}
-
-	params := openai.ChatCompletionNewParams{
-		Messages:    openai.F(openAIMessages),
-		Model:       openai.F(p.model),
-		MaxTokens:   openai.Int(config.MaxToken),
-		TopP:        openai.Float(config.TopP),
-		Temperature: openai.Float(config.Temperature),
-	}
+	openAIMessages := p.convertToOpenAIMessages(messages)
+	params := p.createCompletionParams(openAIMessages, config)
 
 	stream := p.client.Chat.Completions.NewStreaming(ctx, params)
 	responseChan := make(chan StreamingLLMResponse, 100)
