@@ -38,14 +38,14 @@ guti.ContainsAll()
 
 ### AI Operations
 
-The `ai` package provides a flexible interface for interacting with various Language Learning Models (LLMs). Currently supports OpenAI's GPT models with an extensible interface for other providers.
+The `ai` package provides a comprehensive interface for working with Language Learning Models (LLMs) and embedding models. It supports multiple providers (OpenAI, Anthropic), streaming responses, and various embedding models.
 
-#### Basic Usage
+#### LLM Integration
+
+Basic text generation with LLMs:
 
 ```go
-import (
-    "github.com/shaharia-lab/guti/ai"
-)
+import "github.com/shaharia-lab/guti/ai"
 
 // Create an OpenAI provider
 provider := ai.NewOpenAILLMProvider(ai.OpenAIProviderConfig{
@@ -53,44 +53,93 @@ provider := ai.NewOpenAILLMProvider(ai.OpenAIProviderConfig{
     Model:  "gpt-3.5-turbo", // Optional, defaults to gpt-3.5-turbo
 })
 
-// Create a request with default configuration
-request := ai.NewLLMRequest(ai.NewRequestConfig())
+// Create request with configuration
+config := ai.NewRequestConfig(
+    ai.WithMaxToken(2000),
+    ai.WithTemperature(0.7),
+)
+request := ai.NewLLMRequest(config, provider)
 
-// Generate a response
-response, err := request.Generate([]LLMMessage{{Role: "user", Text: "What is the capital of France?"}}, provider)
+// Generate response
+response, err := request.Generate([]ai.LLMMessage{
+    {Role: ai.SystemRole, Text: "You are a helpful assistant"},
+    {Role: ai.UserRole, Text: "What is the capital of France?"},
+})
 if err != nil {
     log.Fatal(err)
 }
 
 fmt.Printf("Response: %s\n", response.Text)
-fmt.Printf("Input tokens: %d\n", response.TotalInputToken)
-fmt.Printf("Output tokens: %d\n", response.TotalOutputToken)
-fmt.Printf("Completion time: %.2f seconds\n", response.CompletionTime)
+fmt.Printf("Tokens used: %d\n", response.TotalOutputToken)
 ```
 
-#### Custom Configuration
+#### Streaming Responses
 
-You can customize the LLM request configuration using the functional options pattern:
+Get realtime token-by-token responses:
 
 ```go
-// Use specific configuration options
-config := ai.NewRequestConfig(
-    ai.WithMaxToken(2000),
-    ai.WithTemperature(0.8),
-    ai.WithTopP(0.95),
-    ai.WithTopK(100),
-)
+stream, err := request.GenerateStream(context.Background(), []ai.LLMMessage{
+    {Role: ai.UserRole, Text: "Tell me a story"},
+})
+if err != nil {
+    log.Fatal(err)
+}
 
-request := ai.NewLLMRequest(config)
+for response := range stream {
+    if response.Error != nil {
+        break
+    }
+    if response.Done {
+        break
+    }
+    fmt.Print(response.Text)
+}
 ```
 
-#### Using Templates
+#### Anthropic Integration
 
-The package also supports templated prompts:
+Use Claude models through Anthropic's API:
+
+```go
+// Create Anthropic client and provider
+client := ai.NewRealAnthropicClient("your-api-key")
+provider := ai.NewAnthropicLLMProvider(ai.AnthropicProviderConfig{
+    Client: client,
+    Model:  "claude-3-sonnet-20240229", // Optional, defaults to latest 3.5 Sonnet
+})
+
+request := ai.NewLLMRequest(config, provider)
+```
+
+#### Embedding Generation
+
+Generate vector embeddings for text:
+
+```go
+provider := ai.NewEmbeddingService("http://api.example.com", nil)
+
+embedding, err := provider.GenerateEmbedding(
+    context.Background(),
+    "Hello world",
+    ai.EmbeddingModelAllMiniLML6V2,
+)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+Supported embedding models:
+- `EmbeddingModelAllMiniLML6V2`: Lightweight, general-purpose model
+- `EmbeddingModelAllMpnetBaseV2`: Higher quality, more compute intensive
+- `EmbeddingModelParaphraseMultilingualMiniLML12V2`: Optimized for multilingual text
+
+#### Template Support
+
+Create dynamic prompts using Go templates:
 
 ```go
 template := &ai.LLMPromptTemplate{
-    Template: "Hello {{.Name}}! Please tell me about {{.Topic}}.",
+    Template: "Hello {{.Name}}! Tell me about {{.Topic}}.",
     Data: map[string]interface{}{
         "Name":  "Alice",
         "Topic": "artificial intelligence",
@@ -102,72 +151,32 @@ if err != nil {
     log.Fatal(err)
 }
 
-response, err := request.Generate(prompt, provider)
+response, err := request.Generate([]ai.LLMMessage{
+    {Role: ai.UserRole, Text: prompt},
+})
 ```
 
 #### Configuration Options
 
-| Option      | Default | Description                          |
-|-------------|---------|--------------------------------------|
-| MaxToken    | 1000    | Maximum number of tokens to generate |
-| TopP        | 0.9     | Nucleus sampling parameter (0-1)     |
-| Temperature | 0.7     | Randomness in output (0-2)           |
-| TopK        | 50      | Top-k sampling parameter             |
-
-#### Error Handling
-
-The package provides structured error handling:
-
-```go
-response, err := request.Generate(prompt, provider)
-if err != nil {
-    if llmErr, ok := err.(*ai.LLMError); ok {
-        fmt.Printf("LLM Error %d: %s\n", llmErr.Code, llmErr.Message)
-    } else {
-        fmt.Printf("Error: %v\n", err)
-    }
-}
-```
+| Option      | Default | Description                |
+|-------------|---------|----------------------------|
+| MaxToken    | 1000    | Maximum tokens to generate |
+| TopP        | 0.9     | Nucleus sampling (0-1)     |
+| Temperature | 0.7     | Output randomness (0-2)    |
+| TopK        | 50      | Top-k sampling parameter   |
 
 #### Custom Providers
 
-You can implement the `LLMProvider` interface to add support for additional LLM providers:
+Implement the provider interfaces to add support for additional services:
 
 ```go
 type LLMProvider interface {
     GetResponse(messages []LLMMessage, config LLMRequestConfig) (LLMResponse, error)
-}
-```
-
-#### Generate Embedding Vector
-
-You can generate embeddings using the provider-based approach:
-
-```go
-import (
-    "github.com/shaharia-lab/guti/ai"
-)
-
-// Create an embedding provider
-provider := ai.NewLocalEmbeddingProvider(ai.LocalProviderConfig{
-    BaseURL: "http://localhost:8000",
-    Client:  &http.Client{},
-})
-
-// Generate embedding
-embedding, err := provider.GenerateEmbedding(context.Background(), "Hello world", ai.EmbeddingModelAllMiniLML6V2)
-if err != nil {
-    log.Fatal(err)
+    GetStreamingResponse(ctx context.Context, messages []LLMMessage, config LLMRequestConfig) (<-chan StreamingLLMResponse, error)
 }
 
-fmt.Printf("Embedding vector: %+v\n", embedding)
-```
-
-The library supports multiple embedding providers. You can implement the `EmbeddingProvider` interface to add support for additional providers:
-
-```go
 type EmbeddingProvider interface {
-    GenerateEmbedding(ctx context.Context, text string, model EmbeddingModel) ([]float32, error)
+    GenerateEmbedding(ctx context.Context, input interface{}, model string) (*EmbeddingResponse, error)
 }
 ```
 
