@@ -1,5 +1,4 @@
-// File: ai/llm_provider_anthropic_client.go
-
+// Package ai provides a flexible interface for interacting with various Language Learning Models (LLMs).
 package ai
 
 import (
