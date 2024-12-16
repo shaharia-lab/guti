@@ -3,11 +3,11 @@ package ai
 import (
 	"context"
 	"encoding/json"
-	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
 	"strings"
 	"testing"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
 	"github.com/stretchr/testify/assert"
 )
 
