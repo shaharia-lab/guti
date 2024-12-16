@@ -109,3 +109,110 @@ func (p *AnthropicLLMProvider) GetResponse(messages []LLMMessage, config LLMRequ
 		CompletionTime:   time.Since(startTime).Seconds(),
 	}, nil
 }
+
+// GetStreamingResponse generates a streaming response using Anthropic's API.
+// It returns a channel that receives chunks of the response as they're generated.
+//
+// Example usage:
+//
+//	client := NewRealAnthropicClient("your-api-key")
+//	provider := NewAnthropicLLMProvider(AnthropicProviderConfig{
+//	    Client: client,
+//	    Model:  anthropic.ModelClaude_3_5_Sonnet_20240620,
+//	})
+//
+//	streamingResp, err := provider.GetStreamingResponse(ctx, messages, config)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	for chunk := range streamingResp {
+//	    if chunk.Error != nil {
+//	        log.Printf("Error: %v", chunk.Error)
+//	        break
+//	    }
+//	    fmt.Print(chunk.Text)
+//	}
+//
+// GetStreamingResponse generates a streaming response using Anthropic's API.
+func (p *AnthropicLLMProvider) GetStreamingResponse(ctx context.Context, messages []LLMMessage, config LLMRequestConfig) (<-chan StreamingLLMResponse, error) {
+	// Create parameters for the API call
+	var anthropicMessages []anthropic.MessageParam
+	var systemMessage string
+
+	// Process messages based on their role
+	for _, msg := range messages {
+		switch msg.Role {
+		case SystemRole:
+			systemMessage = msg.Text
+		case UserRole:
+			anthropicMessages = append(anthropicMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Text)))
+		case AssistantRole:
+			anthropicMessages = append(anthropicMessages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Text)))
+		default:
+			anthropicMessages = append(anthropicMessages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Text)))
+		}
+	}
+
+	params := anthropic.MessageNewParams{
+		Model:       anthropic.F(p.model),
+		Messages:    anthropic.F(anthropicMessages),
+		MaxTokens:   anthropic.F(config.MaxToken),
+		TopP:        anthropic.Float(config.TopP),
+		Temperature: anthropic.Float(config.Temperature),
+	}
+
+	// Add system message if present
+	if systemMessage != "" {
+		params.System = anthropic.F([]anthropic.TextBlockParam{
+			anthropic.NewTextBlock(systemMessage),
+		})
+	}
+
+	stream := p.client.CreateStreamingMessage(ctx, params)
+	responseChan := make(chan StreamingLLMResponse, 100)
+
+	go func() {
+		defer close(responseChan)
+
+		for stream.Next() {
+			select {
+			case <-ctx.Done():
+				responseChan <- StreamingLLMResponse{
+					Error: ctx.Err(),
+					Done:  true,
+				}
+				return
+			default:
+				event := stream.Current()
+
+				switch event.Type {
+				case anthropic.MessageStreamEventTypeContentBlockDelta:
+					delta, ok := event.Delta.(anthropic.ContentBlockDeltaEventDelta)
+					if !ok {
+						continue
+					}
+
+					if delta.Type == anthropic.ContentBlockDeltaEventDeltaTypeTextDelta && delta.Text != "" {
+						responseChan <- StreamingLLMResponse{
+							Text:       delta.Text,
+							TokenCount: 1,
+						}
+					}
+				case anthropic.MessageStreamEventTypeMessageStop:
+					responseChan <- StreamingLLMResponse{Done: true}
+					return
+				}
+			}
+		}
+
+		if err := stream.Err(); err != nil {
+			responseChan <- StreamingLLMResponse{
+				Error: err,
+				Done:  true,
+			}
+		}
+	}()
+
+	return responseChan, nil
+}
