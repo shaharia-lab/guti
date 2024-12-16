@@ -9,9 +9,61 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/packages/ssestream"
 )
 
+// MockOpenAIClient implements OpenAIClient interface for testing
+type MockOpenAIClient struct {
+	client *openai.Client
+}
+
+func NewMockOpenAIClient(transport http.RoundTripper) *MockOpenAIClient {
+	return &MockOpenAIClient{
+		client: openai.NewClient(
+			option.WithHTTPClient(&http.Client{Transport: transport}),
+		),
+	}
+}
+
+func (m *MockOpenAIClient) CreateCompletion(ctx context.Context, params openai.ChatCompletionNewParams) (*openai.ChatCompletion, error) {
+	return m.client.Chat.Completions.New(ctx, params)
+}
+
+func (m *MockOpenAIClient) CreateStreamingCompletion(ctx context.Context, params openai.ChatCompletionNewParams) *ssestream.Stream[openai.ChatCompletionChunk] {
+	return m.client.Chat.Completions.NewStreaming(ctx, params)
+}
+
+type mockTransport struct {
+	responses []string
+	delay     time.Duration
+}
+
+func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if m.delay > 0 {
+		time.Sleep(m.delay)
+	}
+
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		for _, resp := range m.responses {
+			time.Sleep(10 * time.Millisecond) // Simulate streaming delay
+			pw.Write([]byte(resp + "\n"))
+		}
+	}()
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header: http.Header{
+			"Content-Type": []string{"text/event-stream"},
+		},
+		Body: pr,
+	}, nil
+}
+
 func TestOpenAILLMProvider_NewOpenAILLMProvider(t *testing.T) {
+	mockClient := NewMockOpenAIClient(http.DefaultTransport)
+
 	tests := []struct {
 		name          string
 		config        OpenAIProviderConfig
@@ -20,7 +72,7 @@ func TestOpenAILLMProvider_NewOpenAILLMProvider(t *testing.T) {
 		{
 			name: "with specified model",
 			config: OpenAIProviderConfig{
-				APIKey: "test-key",
+				Client: mockClient,
 				Model:  "gpt-4",
 			},
 			expectedModel: "gpt-4",
@@ -28,7 +80,7 @@ func TestOpenAILLMProvider_NewOpenAILLMProvider(t *testing.T) {
 		{
 			name: "with default model",
 			config: OpenAIProviderConfig{
-				APIKey: "test-key",
+				Client: mockClient,
 			},
 			expectedModel: string(openai.ChatModelGPT3_5Turbo),
 		},
@@ -76,17 +128,16 @@ func TestOpenAILLMProvider_GetStreamingResponse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := &OpenAILLMProvider{
-				client: openai.NewClient(
-					option.WithHTTPClient(&http.Client{
-						Transport: &mockTransport{
-							responses: responses,
-							delay:     tt.delay,
-						},
-					}),
-				),
-				model: openai.ChatModelGPT3_5Turbo,
-			}
+			// Create mock client with custom transport
+			mockClient := NewMockOpenAIClient(&mockTransport{
+				responses: responses,
+				delay:     tt.delay,
+			})
+
+			provider := NewOpenAILLMProvider(OpenAIProviderConfig{
+				Client: mockClient,
+				Model:  "gpt-4",
+			})
 
 			ctx, cancel := context.WithTimeout(context.Background(), tt.timeout)
 			defer cancel()
@@ -109,32 +160,4 @@ func TestOpenAILLMProvider_GetStreamingResponse(t *testing.T) {
 			}
 		})
 	}
-}
-
-type mockTransport struct {
-	responses []string
-	delay     time.Duration
-}
-
-func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if m.delay > 0 {
-		time.Sleep(m.delay)
-	}
-
-	pr, pw := io.Pipe()
-	go func() {
-		defer pw.Close()
-		for _, resp := range m.responses {
-			time.Sleep(10 * time.Millisecond) // Simulate streaming delay
-			pw.Write([]byte(resp + "\n"))
-		}
-	}()
-
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header: http.Header{
-			"Content-Type": []string{"text/event-stream"},
-		},
-		Body: pr,
-	}, nil
 }
