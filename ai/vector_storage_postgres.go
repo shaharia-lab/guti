@@ -105,30 +105,30 @@ func (p *PostgresProvider) Initialize(ctx context.Context) error {
 }
 
 // Close closes the database connection.
-func (s *PostgresProvider) Close() error {
-	return s.db.Close()
+func (p *PostgresProvider) Close() error {
+	return p.db.Close()
 }
 
 // CreateCollection implements VectorStorage.CreateCollection.
-func (s *PostgresProvider) CreateCollection(ctx context.Context, config *VectorCollectionConfig) error {
-	if err := s.validator.ValidateCollection(config); err != nil {
+func (p *PostgresProvider) CreateCollection(ctx context.Context, config *VectorCollectionConfig) error {
+	if err := p.validator.ValidateCollection(config); err != nil {
 		return err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	// Create collection table
-	tableName := fmt.Sprintf("%s.%s", s.schema, config.Name)
-	if err := s.createCollectionTable(ctx, tx, tableName, config); err != nil {
+	tableName := fmt.Sprintf("%s.%s", p.schema, config.Name)
+	if err := p.createCollectionTable(ctx, tx, tableName, config); err != nil {
 		return err
 	}
 
 	// Store collection metadata
-	if err := s.storeCollectionMetadata(ctx, tx, config); err != nil {
+	if err := p.storeCollectionMetadata(ctx, tx, config); err != nil {
 		return err
 	}
 
@@ -136,15 +136,15 @@ func (s *PostgresProvider) CreateCollection(ctx context.Context, config *VectorC
 }
 
 // DeleteCollection implements VectorStorage.DeleteCollection.
-func (s *PostgresProvider) DeleteCollection(ctx context.Context, name string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+func (p *PostgresProvider) DeleteCollection(ctx context.Context, name string) error {
+	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	// Drop collection table
-	tableName := fmt.Sprintf("%s.%s", s.schema, name)
+	tableName := fmt.Sprintf("%s.%s", p.schema, name)
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)); err != nil {
 		return &VectorError{
 			Code:    ErrCodeOperationFailed,
@@ -154,7 +154,7 @@ func (s *PostgresProvider) DeleteCollection(ctx context.Context, name string) er
 	}
 
 	// Remove collection metadata
-	if err := s.deleteCollectionMetadata(ctx, tx, name); err != nil {
+	if err := p.deleteCollectionMetadata(ctx, tx, name); err != nil {
 		return err
 	}
 
@@ -162,14 +162,14 @@ func (s *PostgresProvider) DeleteCollection(ctx context.Context, name string) er
 }
 
 // ListCollections implements VectorStorage.ListCollections.
-func (s *PostgresProvider) ListCollections(ctx context.Context) ([]string, error) {
+func (p *PostgresProvider) ListCollections(ctx context.Context) ([]string, error) {
 	query := `
 		SELECT name 
 		FROM vector_collections 
 		WHERE schema_name = $1
 		ORDER BY name`
 
-	rows, err := s.db.QueryContext(ctx, query, s.schema)
+	rows, err := p.db.QueryContext(ctx, query, p.schema)
 	if err != nil {
 		return nil, &VectorError{
 			Code:    ErrCodeOperationFailed,
@@ -192,17 +192,17 @@ func (s *PostgresProvider) ListCollections(ctx context.Context) ([]string, error
 }
 
 // UpsertDocument implements VectorStorage.UpsertDocument.
-func (s *PostgresProvider) UpsertDocument(ctx context.Context, collection string, doc *VectorDocument) error {
-	config, err := s.getCollectionConfig(ctx, collection)
+func (p *PostgresProvider) UpsertDocument(ctx context.Context, collection string, doc *VectorDocument) error {
+	config, err := p.getCollectionConfig(ctx, collection)
 	if err != nil {
 		return err
 	}
 
-	if err := s.validator.ValidateDocument(doc, config); err != nil {
+	if err := p.validator.ValidateDocument(doc, config); err != nil {
 		return err
 	}
 
-	tableName := fmt.Sprintf("%s.%s", s.schema, collection)
+	tableName := fmt.Sprintf("%s.%s", p.schema, collection)
 	query := fmt.Sprintf(`
 		INSERT INTO %s (id, vector, content, metadata, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -223,7 +223,7 @@ func (s *PostgresProvider) UpsertDocument(ctx context.Context, collection string
 	}
 
 	vec := pgvector.NewVector(doc.Vector)
-	_, err = s.db.ExecContext(ctx, query,
+	_, err = p.db.ExecContext(ctx, query,
 		doc.ID,
 		vec,
 		doc.Content,
@@ -244,30 +244,30 @@ func (s *PostgresProvider) UpsertDocument(ctx context.Context, collection string
 }
 
 // UpsertDocuments implements VectorStorage.UpsertDocuments.
-func (s *PostgresProvider) UpsertDocuments(ctx context.Context, collection string, docs []*VectorDocument) error {
+func (p *PostgresProvider) UpsertDocuments(ctx context.Context, collection string, docs []*VectorDocument) error {
 	if len(docs) == 0 {
 		return nil
 	}
 
-	config, err := s.getCollectionConfig(ctx, collection)
+	config, err := p.getCollectionConfig(ctx, collection)
 	if err != nil {
 		return err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	stmt, err := s.prepareBulkInsertStmt(ctx, tx, collection)
+	stmt, err := p.prepareBulkInsertStmt(ctx, tx, collection)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	for _, doc := range docs {
-		if err := s.validator.ValidateDocument(doc, config); err != nil {
+		if err := p.validator.ValidateDocument(doc, config); err != nil {
 			return err
 		}
 
@@ -302,8 +302,8 @@ func (s *PostgresProvider) UpsertDocuments(ctx context.Context, collection strin
 }
 
 // GetDocument implements VectorStorage.GetDocument.
-func (s *PostgresProvider) GetDocument(ctx context.Context, collection, id string) (*VectorDocument, error) {
-	tableName := fmt.Sprintf("%s.%s", s.schema, collection)
+func (p *PostgresProvider) GetDocument(ctx context.Context, collection, id string) (*VectorDocument, error) {
+	tableName := fmt.Sprintf("%s.%s", p.schema, collection)
 	query := fmt.Sprintf(`
 		SELECT id, vector, content, metadata, created_at, updated_at
 		FROM %s
@@ -314,7 +314,7 @@ func (s *PostgresProvider) GetDocument(ctx context.Context, collection, id strin
 	var metadata []byte
 	var vec pgvector.Vector
 
-	err := s.db.QueryRowContext(ctx, query, id).Scan(
+	err := p.db.QueryRowContext(ctx, query, id).Scan(
 		&doc.ID,
 		&vec,
 		&doc.Content,
@@ -346,11 +346,11 @@ func (s *PostgresProvider) GetDocument(ctx context.Context, collection, id strin
 }
 
 // DeleteDocument implements VectorStorage.DeleteDocument.
-func (s *PostgresProvider) DeleteDocument(ctx context.Context, collection, id string) error {
-	tableName := fmt.Sprintf("%s.%s", s.schema, collection)
+func (p *PostgresProvider) DeleteDocument(ctx context.Context, collection, id string) error {
+	tableName := fmt.Sprintf("%s.%s", p.schema, collection)
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
 
-	result, err := s.db.ExecContext(ctx, query, id)
+	result, err := p.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return &VectorError{
 			Code:    ErrCodeOperationFailed,
@@ -372,8 +372,8 @@ func (s *PostgresProvider) DeleteDocument(ctx context.Context, collection, id st
 }
 
 // SearchByVector implements VectorStorage.SearchByVector.
-func (s *PostgresProvider) SearchByVector(ctx context.Context, collection string, vector []float32, opts *VectorSearchOptions) ([]VectorSearchResult, error) {
-	config, err := s.getCollectionConfig(ctx, collection)
+func (p *PostgresProvider) SearchByVector(ctx context.Context, collection string, vector []float32, opts *VectorSearchOptions) ([]VectorSearchResult, error) {
+	config, err := p.getCollectionConfig(ctx, collection)
 	if err != nil {
 		return nil, err
 	}
@@ -389,11 +389,11 @@ func (s *PostgresProvider) SearchByVector(ctx context.Context, collection string
 		}
 	}
 
-	tableName := fmt.Sprintf("%s.%s", s.schema, collection)
-	query := s.buildSearchQuery(tableName, opts)
+	tableName := fmt.Sprintf("%s.%s", p.schema, collection)
+	query := p.buildSearchQuery(tableName, opts)
 
 	vec := pgvector.NewVector(vector)
-	rows, err := s.db.QueryContext(ctx, query, vec, opts.Limit, opts.Offset)
+	rows, err := p.db.QueryContext(ctx, query, vec, opts.Limit, opts.Offset)
 	if err != nil {
 		return nil, &VectorError{
 			Code:    ErrCodeOperationFailed,
@@ -403,17 +403,17 @@ func (s *PostgresProvider) SearchByVector(ctx context.Context, collection string
 	}
 	defer rows.Close()
 
-	return s.scanSearchResults(rows, opts.IncludeMetadata)
+	return p.scanSearchResults(rows, opts.IncludeMetadata)
 }
 
 // SearchByID implements VectorStorage.SearchByID.
-func (s *PostgresProvider) SearchByID(ctx context.Context, collection, id string, opts *VectorSearchOptions) ([]VectorSearchResult, error) {
-	doc, err := s.GetDocument(ctx, collection, id)
+func (p *PostgresProvider) SearchByID(ctx context.Context, collection, id string, opts *VectorSearchOptions) ([]VectorSearchResult, error) {
+	doc, err := p.GetDocument(ctx, collection, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.SearchByVector(ctx, collection, doc.Vector, opts)
+	return p.SearchByVector(ctx, collection, doc.Vector, opts)
 }
 
 // Helper functions
@@ -462,7 +462,7 @@ func initializePostgres(db *sql.DB, schema string) error {
 	return nil
 }
 
-func (s *PostgresProvider) createCollectionTable(ctx context.Context, tx *sql.Tx, tableName string, config *VectorCollectionConfig) error {
+func (p *PostgresProvider) createCollectionTable(ctx context.Context, tx *sql.Tx, tableName string, config *VectorCollectionConfig) error {
 	query := fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id TEXT PRIMARY KEY,
@@ -482,7 +482,7 @@ func (s *PostgresProvider) createCollectionTable(ctx context.Context, tx *sql.Tx
 	}
 
 	// Create vector index based on index type
-	indexQuery := s.buildIndexQuery(tableName, config)
+	indexQuery := p.buildIndexQuery(tableName, config)
 	if _, err := tx.ExecContext(ctx, indexQuery); err != nil {
 		return &VectorError{
 			Code:    ErrCodeOperationFailed,
@@ -496,7 +496,7 @@ func (s *PostgresProvider) createCollectionTable(ctx context.Context, tx *sql.Tx
 
 // Helper functions continue...
 
-func (s *PostgresProvider) storeCollectionMetadata(ctx context.Context, tx *sql.Tx, config *VectorCollectionConfig) error {
+func (p *PostgresProvider) storeCollectionMetadata(ctx context.Context, tx *sql.Tx, config *VectorCollectionConfig) error {
 	customFields, err := json.Marshal(config.CustomFields)
 	if err != nil {
 		return &VectorError{
@@ -510,11 +510,11 @@ func (s *PostgresProvider) storeCollectionMetadata(ctx context.Context, tx *sql.
 		INSERT INTO %s.vector_collections 
 		(name, schema_name, dimension, index_type, distance_type, custom_fields)
 		VALUES ($1, $2, $3, $4, $5, $6)
-	`, s.schema)
+	`, p.schema)
 
 	_, err = tx.ExecContext(ctx, query,
 		config.Name,
-		s.schema,
+		p.schema,
 		config.Dimension,
 		config.IndexType,
 		config.DistanceType,
@@ -535,13 +535,13 @@ func (s *PostgresProvider) storeCollectionMetadata(ctx context.Context, tx *sql.
 	return nil
 }
 
-func (s *PostgresProvider) deleteCollectionMetadata(ctx context.Context, tx *sql.Tx, name string) error {
+func (p *PostgresProvider) deleteCollectionMetadata(ctx context.Context, tx *sql.Tx, name string) error {
 	query := fmt.Sprintf(`
 		DELETE FROM %s.vector_collections 
 		WHERE name = $1 AND schema_name = $2
-	`, s.schema)
+	`, p.schema)
 
-	result, err := tx.ExecContext(ctx, query, name, s.schema)
+	result, err := tx.ExecContext(ctx, query, name, p.schema)
 	if err != nil {
 		return &VectorError{
 			Code:    ErrCodeOperationFailed,
@@ -562,17 +562,17 @@ func (s *PostgresProvider) deleteCollectionMetadata(ctx context.Context, tx *sql
 	return nil
 }
 
-func (s *PostgresProvider) getCollectionConfig(ctx context.Context, name string) (*VectorCollectionConfig, error) {
+func (p *PostgresProvider) getCollectionConfig(ctx context.Context, name string) (*VectorCollectionConfig, error) {
 	query := fmt.Sprintf(`
 		SELECT dimension, index_type, distance_type, custom_fields
 		FROM %s.vector_collections
 		WHERE name = $1 AND schema_name = $2
-	`, s.schema)
+	`, p.schema)
 
 	var config VectorCollectionConfig
 	var customFields []byte
 
-	err := s.db.QueryRowContext(ctx, query, name, s.schema).Scan(
+	err := p.db.QueryRowContext(ctx, query, name, p.schema).Scan(
 		&config.Dimension,
 		&config.IndexType,
 		&config.DistanceType,
@@ -601,7 +601,7 @@ func (s *PostgresProvider) getCollectionConfig(ctx context.Context, name string)
 	return &config, nil
 }
 
-func (s *PostgresProvider) buildSearchQuery(tableName string, opts *VectorSearchOptions) string {
+func (p *PostgresProvider) buildSearchQuery(tableName string, opts *VectorSearchOptions) string {
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`
 		SELECT 
@@ -636,7 +636,7 @@ func (s *PostgresProvider) buildSearchQuery(tableName string, opts *VectorSearch
 	return fmt.Sprintf(query.String(), tableName)
 }
 
-func (s *PostgresProvider) buildIndexQuery(tableName string, config *VectorCollectionConfig) string {
+func (p *PostgresProvider) buildIndexQuery(tableName string, config *VectorCollectionConfig) string {
 	var operator string
 	switch config.DistanceType {
 	case DistanceTypeCosine:
@@ -659,8 +659,8 @@ func (s *PostgresProvider) buildIndexQuery(tableName string, config *VectorColle
 	}
 }
 
-func (s *PostgresProvider) prepareBulkInsertStmt(ctx context.Context, tx *sql.Tx, collection string) (*sql.Stmt, error) {
-	tableName := fmt.Sprintf("%s.%s", s.schema, collection)
+func (p *PostgresProvider) prepareBulkInsertStmt(ctx context.Context, tx *sql.Tx, collection string) (*sql.Stmt, error) {
+	tableName := fmt.Sprintf("%s.%s", p.schema, collection)
 	query := fmt.Sprintf(`
 		INSERT INTO %s (id, vector, content, metadata, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -674,7 +674,7 @@ func (s *PostgresProvider) prepareBulkInsertStmt(ctx context.Context, tx *sql.Tx
 	return tx.PrepareContext(ctx, query)
 }
 
-func (s *PostgresProvider) scanSearchResults(rows *sql.Rows, includeMetadata bool) ([]VectorSearchResult, error) {
+func (p *PostgresProvider) scanSearchResults(rows *sql.Rows, includeMetadata bool) ([]VectorSearchResult, error) {
 	var results []VectorSearchResult
 
 	for rows.Next() {
