@@ -26,7 +26,7 @@ func TestEmbeddingService_GenerateEmbedding(t *testing.T) {
 				Data: []EmbeddingObject{
 					{
 						Object:    "embedding",
-						Embedding: []float64{0.1, 0.2, 0.3},
+						Embedding: []float32{0.1, 0.2, 0.3},
 						Index:     0,
 					},
 				},
@@ -46,12 +46,12 @@ func TestEmbeddingService_GenerateEmbedding(t *testing.T) {
 				Data: []EmbeddingObject{
 					{
 						Object:    "embedding",
-						Embedding: []float64{0.1, 0.2, 0.3},
+						Embedding: []float32{0.1, 0.2, 0.3},
 						Index:     0,
 					},
 					{
 						Object:    "embedding",
-						Embedding: []float64{0.4, 0.5, 0.6},
+						Embedding: []float32{0.4, 0.5, 0.6},
 						Index:     1,
 					},
 				},
