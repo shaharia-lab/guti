@@ -44,7 +44,7 @@ type EmbeddingObject struct {
 	// Object identifies the type of the response object
 	Object string `json:"object"`
 	// Embedding is the generated vector representation of the input text
-	Embedding []float64 `json:"embedding"`
+	Embedding []float32 `json:"embedding"`
 	// Index is the position of this embedding in the response array
 	Index int `json:"index"`
 }
