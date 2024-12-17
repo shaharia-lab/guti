@@ -78,7 +78,7 @@ request := ai.NewLLMRequest(config, provider)
 ```
 
 #### Embedding Generation
-[Embedding](/docs/ai/embedding.md)
+[Embedding](/guti/ai/embedding.md)
 
 #### Template Support
 
